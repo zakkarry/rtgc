@@ -7,6 +7,7 @@ let package = Package(
   name: "RtorrentCleaner",
   dependencies: [
     .package(url: "https://github.com/apple/swift-argument-parser", from: "1.0.0"),
+    .package(url: "https://github.com/apple/swift-system", from: "1.0.0"),
     .package(url: "https://github.com/helje5/SwiftXmlRpc.git", from: "0.8.7"),
   ],
 
@@ -17,6 +18,7 @@ let package = Package(
       name: "rtorrent-cleaner",
       dependencies: [
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
+        .product(name: "SystemPackage", package: "swift-system"),
         .product(name: "XmlRpc", package: "swiftxmlrpc"),
       ],
       path: "Sources")
