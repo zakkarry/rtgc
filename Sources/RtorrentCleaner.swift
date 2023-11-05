@@ -56,7 +56,7 @@ struct RTorrent {
 
 @available(macOS 13.0, *)
 @main
-struct RTorrentCleaner: ParsableCommand {
+struct RtorrentCleaner: ParsableCommand {
   @Option(help: "rTorrent RPC url") public var rpc: String
   @Option(help: "Root directories to check") public var dataDirs = [String]()
   @Flag(help: "Remove unregistered torrents") public var unregistered = false
