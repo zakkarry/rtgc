@@ -79,7 +79,7 @@ async function getChildPaths(dataDir) {
   return entries.map((entry) => join(dataDir, entry));
 }
 
-async function isDirectory(dirent, child) {
+async function isDirOrDirSymlink(dirent, child) {
   if (dirent.isDirectory()) return true;
   if (dirent.isSymbolicLink()) {
     try {
@@ -96,9 +96,26 @@ async function getSymbolicLinksRecursive(dir) {
   const children = await Promise.all(
     dirents.map(async (dirent) => {
       const child = join(dir, dirent.name);
-      if (await isDirectory(dirent, child)) {
+      if (await isDirOrDirSymlink(dirent, child)) {
         return getSymbolicLinksRecursive(child);
       } else if (dirent.isSymbolicLink()) {
+        return [child];
+      } else {
+        return [];
+      }
+    }),
+  );
+  return children.flat();
+}
+
+async function getHardlinkedFilesRecursive(dir) {
+  const dirents = await readdir(dir, { withFileTypes: true });
+  const children = await Promise.all(
+    dirents.map(async (dirent) => {
+      const child = join(dir, dirent.name);
+      if (await isDirOrDirSymlink(dirent, child)) {
+        return getHardlinkedFilesRecursive(child);
+      } else if ((await stat(child)).nlink > 1) {
         return [child];
       } else {
         return [];
@@ -146,6 +163,14 @@ async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
   return roots;
 }
 
+async function findHardlinkTargetPaths(dataDirs) {
+  const allHardlinks = (
+    await Promise.all(dataDirs.map(getHardlinkedFilesRecursive))
+  ).flat();
+  console.log(allHardlinks);
+  return [];
+}
+
 function editSymlink(path, target) {
   unlinkSync(path);
   symlinkSync(target, path);
@@ -190,32 +215,35 @@ async function main() {
     options: {
       rpc: { type: "string" },
       dataDir: { short: "d", type: "string", multiple: true },
-      unregistered: { type: "boolean" },
-      orphaned: { type: "boolean" },
+      fixUnregistered: { type: "boolean" },
+      fixOrphaned: { type: "boolean" },
       symlinkSource: { type: "string", multiple: true },
       improperSymlinkSegment: { type: "string" },
       properSymlinkSegment: { type: "string" },
       fixSymlinks: { type: "boolean" },
+      retainSolelyForSeeding: { type: "boolean" },
     },
   });
-  const rtorrent = new RTorrent(Args.rpc);
 
+  const rtorrent = new RTorrent(Args.rpc);
   const downloadList = await rtorrent.downloadList();
 
   const session = [];
-  // for (const [i, infoHash] of downloadList.entries()) {
-  //   printProgress(i, downloadList.length);
-  //   const torrent = await rtorrent.getTorrent(infoHash);
-  //
-  //   if (torrent.message.toLowerCase().includes("unregistered")) {
-  //     if (Args.unregistered) {
-  //       await rtorrent.removeTorrent(infoHash);
-  //     } else {
-  //       console.log("Would remove unregistered torrent:", torrent);
-  //       session.push(torrent);
-  //     }
-  //   }
-  // }
+  if (Args.retainSolelyForSeeding || Args.fixUnregistered) {
+    for (const [i, infoHash] of downloadList.entries()) {
+      printProgress(i, downloadList.length);
+      const torrent = await rtorrent.getTorrent(infoHash);
+
+      if (torrent.message.toLowerCase().includes("unregistered")) {
+        if (Args.fixUnregistered) {
+          await rtorrent.removeTorrent(infoHash);
+        } else {
+          console.log("Would remove unregistered torrent:", torrent);
+          session.push(torrent);
+        }
+      }
+    }
+  }
 
   const allPaths = (await Promise.all(Args.dataDir.map(getChildPaths))).flat();
 
@@ -233,6 +261,10 @@ async function main() {
     Args.symlinkSource,
   );
 
+  const pathsHoldingHardlinkTargets = await findHardlinkTargetPaths(
+    Args.dataDir,
+  );
+
   const orphanedPaths = allPaths.filter(
     (path) =>
       !pathsInSession.has(path) && !pathsHoldingSymlinkTargets.has(path),
@@ -243,7 +275,7 @@ async function main() {
   for (const orphan of orphanedPaths) {
     const size = await du(orphan);
     totalSize += size;
-    if (Args.orphaned) {
+    if (Args.fixOrphaned) {
       await rm(orphan, { recursive: true });
       console.log("Removed orphan", filesize(size), orphan);
     } else {
