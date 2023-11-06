@@ -239,6 +239,7 @@ async function main() {
       if (torrent.message.toLowerCase().includes("unregistered")) {
         if (Args.fixUnregistered) {
           await rtorrent.removeTorrent(infoHash);
+          console.log("Removed unregistered torrent:", torrent);
         } else {
           console.log("Would remove unregistered torrent:", torrent);
           session.push(torrent);
