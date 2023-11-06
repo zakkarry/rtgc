@@ -217,7 +217,7 @@ async function main() {
   //   }
   // }
 
-  const allPaths = await Promise.all(Args.dataDir.flatMap(getChildPaths));
+  const allPaths = (await Promise.all(Args.dataDir.map(getChildPaths))).flat();
 
   const pathsInSession = new Set(session.map((e) => e.basePath));
 
