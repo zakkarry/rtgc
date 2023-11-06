@@ -125,52 +125,6 @@ async function getHardlinkedFilesRecursive(dir) {
   return children.flat();
 }
 
-async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
-  const symlinks = (
-    await Promise.all(symlinkSourceRoots.map(getSymbolicLinksRecursive))
-  ).flat();
-
-  const realPaths = (
-    await Promise.all(
-      symlinks.map(async (symlinkPath) => {
-        try {
-          const linkTarget = await readlink(symlinkPath);
-          return [resolve(dirname(symlinkPath), linkTarget)];
-        } catch (e) {
-          console.error("skipping broken link:", symlinkPath);
-          return [];
-        }
-      }),
-    )
-  ).flat();
-
-  const roots = realPaths.reduce((acc, filePath) => {
-    const dataDir = dataDirs.find((d) =>
-      normalize(filePath).startsWith(resolve(d)),
-    );
-    if (dataDir) {
-      acc.add(
-        filePath
-          .split(sep)
-          .slice(0, dataDir.split(sep).length + 1)
-          .join(sep),
-      );
-    } else {
-      console.log("Skipping escaping symlink:", filePath);
-    }
-    return acc;
-  }, new Set());
-  return roots;
-}
-
-async function findHardlinkTargetPaths(dataDirs) {
-  const allHardlinks = (
-    await Promise.all(dataDirs.map(getHardlinkedFilesRecursive))
-  ).flat();
-  console.log(allHardlinks);
-  return [];
-}
-
 function editSymlink(path, target) {
   unlinkSync(path);
   symlinkSync(target, path);
@@ -208,6 +162,54 @@ async function fixSymlinks(
       }
     }
   }
+}
+
+function getDedupedBasePathsFromFiles(files, dataDirs) {
+  return files.reduce((acc, filePath) => {
+    const dataDir = dataDirs.find((d) =>
+      normalize(filePath).startsWith(resolve(d)),
+    );
+    if (dataDir) {
+      acc.add(
+        filePath
+          .split(sep)
+          .slice(0, dataDir.split(sep).length + 1)
+          .join(sep),
+      );
+    } else {
+      console.log("Skipping escaping symlink:", filePath);
+    }
+    return acc;
+  }, new Set());
+}
+
+async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
+  const symlinks = (
+    await Promise.all(symlinkSourceRoots.map(getSymbolicLinksRecursive))
+  ).flat();
+
+  const realPaths = (
+    await Promise.all(
+      symlinks.map(async (symlinkPath) => {
+        try {
+          const linkTarget = await readlink(symlinkPath);
+          return [resolve(dirname(symlinkPath), linkTarget)];
+        } catch (e) {
+          console.error("skipping broken link:", symlinkPath);
+          return [];
+        }
+      }),
+    )
+  ).flat();
+
+  return getDedupedBasePathsFromFiles(realPaths, dataDirs);
+}
+
+async function findHardlinkTargetPaths(dataDirs) {
+  const allHardlinks = (
+    await Promise.all(dataDirs.map(getHardlinkedFilesRecursive))
+  ).flat();
+  return getDedupedBasePathsFromFiles(allHardlinks, dataDirs);
 }
 
 async function main() {
@@ -267,10 +269,11 @@ async function main() {
 
   const orphanedPaths = allPaths.filter(
     (path) =>
-      !pathsInSession.has(path) && !pathsHoldingSymlinkTargets.has(path),
+      !(Args.retainSolelyForSeeding && pathsInSession.has(path)) &&
+      !pathsHoldingSymlinkTargets.has(path) &&
+      !pathsHoldingHardlinkTargets.has(path),
   );
 
-  console.log(orphanedPaths);
   let totalSize = 0;
   for (const orphan of orphanedPaths) {
     const size = await du(orphan);
