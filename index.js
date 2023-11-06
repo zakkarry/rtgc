@@ -113,6 +113,8 @@ async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
     await Promise.all(symlinkSourceRoots.map(getSymbolicLinksRecursive))
   ).flat();
 
+  console.log(symlinks);
+
   const realPaths = (
     await Promise.all(
       symlinks.map(async (symlinkPath) => {
