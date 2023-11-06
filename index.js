@@ -42,15 +42,26 @@ class RTorrent {
       method("d.message", [infoHash]),
       method("d.is_multi_file", [infoHash]),
       method("d.name", [infoHash]),
+      method("t.url", [`${infoHash}:t0`]),
+      method("d.custom1", [infoHash]),
     ]);
 
-    const [[directory], [message], [isMultiFile], [name]] = response;
+    const [
+      [directory],
+      [message],
+      [isMultiFile],
+      [name],
+      [announce],
+      [custom1],
+    ] = response;
 
     return {
       infoHash,
       name,
+      tracker: new URL(announce).hostname,
       directory: isMultiFile === "1" ? dirname(directory) : directory,
       basePath: isMultiFile === "1" ? directory : join(directory, name),
+      custom1,
       message,
     };
   }
@@ -253,7 +264,7 @@ async function main() {
   const allPaths = (await Promise.all(Args.dataDir.map(getChildPaths))).flat();
 
   const pathsInSession = new Set(session.map((e) => e.basePath));
-  console.log(JSON.stringify(pathsInSession));
+  console.log(JSON.stringify(Array.from(pathsInSession)));
 
   await fixSymlinks(
     Args.symlinkSource,
