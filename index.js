@@ -136,23 +136,21 @@ async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
     )
   ).flat();
 
-  const roots = realPaths.reduce((roots, filePath) => {
+  const roots = realPaths.reduce((acc, filePath) => {
     const dataDir = dataDirs.find((d) =>
       normalize(filePath).startsWith(resolve(d)),
     );
-    if (!dataDir) {
-      console.log("symlink points outside dataDirs", filePath);
-    } else {
-      roots.add(
+    if (dataDir) {
+      acc.add(
         filePath
           .split(sep)
           .slice(0, dataDir.split(sep).length + 1)
           .join(sep),
       );
     }
-    return roots;
+    return acc;
   }, new Set());
-  console.log(roots);
+  return roots;
 }
 
 async function fixSymlinks(
