@@ -115,9 +115,9 @@ async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
 
   const realPaths = (
     await Promise.all(
-      symlinks.map((s) => {
+      symlinks.map(async (s) => {
         try {
-          return [realpath(s)];
+          return [await realpath(s)];
         } catch (e) {
           console.error("skipping broken link:", s);
           return [];
