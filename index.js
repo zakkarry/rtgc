@@ -93,10 +93,9 @@ async function isDirectory(dirent, child) {
 
 async function getSymbolicLinksRecursive(dir) {
   const dirents = await readdir(dir, { withFileTypes: true });
-  return Promise.all(
-    dirents.flatMap(async (dirent) => {
+  const children = await Promise.all(
+    dirents.map(async (dirent) => {
       const child = join(dir, dirent.name);
-
       if (await isDirectory(dirent, child)) {
         return getSymbolicLinksRecursive(child);
       } else if (dirent.isSymbolicLink()) {
@@ -106,12 +105,13 @@ async function getSymbolicLinksRecursive(dir) {
       }
     }),
   );
+  return children.flat();
 }
 
 async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
-  const symlinks = await Promise.all(
-    symlinkSourceRoots.flatMap(getSymbolicLinksRecursive),
-  );
+  const symlinks = (
+    await Promise.all(symlinkSourceRoots.map(getSymbolicLinksRecursive))
+  ).flat();
   console.log(symlinks);
   const realPaths = await Promise.all(symlinks.map((s) => realpath(s)));
   const roots = realPaths.reduce((roots, filePath) => {
