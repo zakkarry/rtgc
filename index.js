@@ -266,7 +266,6 @@ async function main() {
           console.log("Would remove missing files torrent:", torrent);
         }
       } else {
-        console.log(torrent.message);
         session.push(torrent);
       }
     }
