@@ -1,5 +1,6 @@
 import du from "du";
 import { filesize } from "filesize";
+import { statSync } from "fs";
 import { readdir, realpath, rm, stat } from "fs/promises";
 import { dirname, join, normalize, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
@@ -78,14 +79,25 @@ async function getChildPaths(dataDir) {
   return entries.map((entry) => join(dataDir, entry));
 }
 
+async function isDirectory(dirent, child) {
+  if (dirent.isDirectory()) return true;
+  if (dirent.isSymbolicLink()) {
+    try {
+      const stats = await stat(child);
+      return stats.isDirectory();
+    } catch (e) {
+      return false;
+    }
+  }
+}
+
 async function getSymbolicLinksRecursive(dir) {
   const dirents = await readdir(dir, { withFileTypes: true });
   return Promise.all(
     dirents.flatMap(async (dirent) => {
       const child = join(dir, dirent.name);
-      if (dirent.isDirectory()) {
-        return getSymbolicLinksRecursive(child);
-      } else if (dirent.isSymbolicLink() && (await stat(child)).isDirectory()) {
+
+      if (await isDirectory(dirent, child)) {
         return getSymbolicLinksRecursive(child);
       } else if (dirent.isSymbolicLink()) {
         return [child];
@@ -114,6 +126,7 @@ async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
     );
     return roots;
   }, new Set());
+  console.log(roots);
 }
 
 async function main() {
