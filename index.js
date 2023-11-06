@@ -1,18 +1,9 @@
 import du from "du";
 import { filesize } from "filesize";
-import { rmSync, statSync, symlinkSync, unlinkSync } from "fs";
-import { readdir, readlink, realpath, rm, stat } from "fs/promises";
-import {
-  dirname,
-  join,
-  normalize,
-  resolve,
-  sep,
-  delimiter,
-  relative,
-} from "node:path";
+import { symlinkSync, unlinkSync } from "node:fs";
+import { readdir, readlink, rm, stat } from "node:fs/promises";
+import { dirname, join, normalize, relative, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
-import { log } from "util";
 import xmlrpc from "xmlrpc";
 
 function method(methodName, params = []) {
@@ -184,7 +175,7 @@ async function fixSymlinks(
           editSymlink(symlink, properLinkTarget);
         } else {
           console.log(
-            `Would fix improper symlink:\n\t${rawLinkTarget}\n\t${properLinkTarget}`,
+            `Would fix improper symlink:\n\t${symlink}\n\t${rawLinkTarget}\n\t${properLinkTarget}`,
           );
         }
       }
