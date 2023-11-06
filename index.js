@@ -243,6 +243,8 @@ async function main() {
           console.log("Would remove unregistered torrent:", torrent);
           session.push(torrent);
         }
+      } else {
+        session.push(torrent);
       }
     }
   }
