@@ -4,6 +4,7 @@ import { statSync } from "fs";
 import { readdir, readlink, realpath, rm, stat } from "fs/promises";
 import { dirname, join, normalize, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
+import { log } from "util";
 import xmlrpc from "xmlrpc";
 
 function method(methodName, params = []) {
@@ -133,7 +134,8 @@ async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
     console.log("normalized file path", normalize(filePath));
     console.log(dataDirs);
     console.log("resolved data dirs", dataDirs.map(resolve));
-    const dataDir = dataDirs.find((d) =>
+    const dataDir = dataDirs.find(
+      (d) => console.log(JSON.stringify(d)),
       normalize(filePath).startsWith(resolve(d)),
     );
     if (!dataDir) {
