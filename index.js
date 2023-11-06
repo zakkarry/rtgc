@@ -235,6 +235,7 @@ async function main() {
       properSymlinkSegment: { type: "string" },
       fixSymlinks: { type: "boolean" },
       retainSolelyForSeeding: { type: "boolean" },
+      fixMissingFiles: { type: "boolean" },
     },
   });
 
@@ -253,9 +254,19 @@ async function main() {
           console.log("Removed unregistered torrent:", torrent);
         } else {
           console.log("Would remove unregistered torrent:", torrent);
-          session.push(torrent);
+        }
+      } else if (
+        torrent.message.trim() ===
+        "Download registered as completed, but hash check returned unfinished chunks."
+      ) {
+        if (Args.fixMissingFiles) {
+          await rtorrent.removeTorrent(infoHash);
+          console.log("Removed missing files torrent:", torrent);
+        } else {
+          console.log("Would remove missing files torrent:", torrent);
         }
       } else {
+        console.log(torrent.message);
         session.push(torrent);
       }
     }
@@ -264,7 +275,6 @@ async function main() {
   const allPaths = (await Promise.all(Args.dataDir.map(getChildPaths))).flat();
 
   const pathsInSession = new Set(session.map((e) => e.basePath));
-  console.log(JSON.stringify(Array.from(pathsInSession)));
 
   await fixSymlinks(
     Args.symlinkSource,
@@ -284,9 +294,14 @@ async function main() {
 
   const orphanedPaths = allPaths.filter(
     (path) =>
-      !(Args.retainSolelyForSeeding && pathsInSession.has(path)) &&
-      !pathsHoldingSymlinkTargets.has(path) &&
-      !pathsHoldingHardlinkTargets.has(path),
+      !(
+        // any of these can create a 'hold' on a path
+        (
+          (Args.retainSolelyForSeeding && pathsInSession.has(path)) ||
+          pathsHoldingSymlinkTargets.has(path) ||
+          pathsHoldingHardlinkTargets.has(path)
+        )
+      ),
   );
 
   let totalSize = 0;
