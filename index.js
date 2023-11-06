@@ -146,7 +146,7 @@ async function main() {
 
   const pathsInSession = session.map((e) => e.basePath);
 
-  const pathsHoldingSymlinkTargets = findSymlinkTargetPaths(
+  const pathsHoldingSymlinkTargets = await findSymlinkTargetPaths(
     Args.dataDir,
     Args.symlinkSource,
   );
