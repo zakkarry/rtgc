@@ -230,7 +230,7 @@ async function main() {
       dataDir: { short: "d", type: "string", multiple: true },
       fixUnregistered: { type: "boolean" },
       fixOrphaned: { type: "boolean" },
-      symlinkSource: { type: "string", multiple: true },
+      symlinkSource: { type: "string", multiple: true, default: [] },
       improperSymlinkSegment: { type: "string" },
       properSymlinkSegment: { type: "string" },
       fixSymlinks: { type: "boolean" },
