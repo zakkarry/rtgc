@@ -236,6 +236,8 @@ async function main() {
       fixSymlinks: { type: "boolean" },
       retainSolelyForSeeding: { type: "boolean" },
       fixMissingFiles: { type: "boolean" },
+      safetyThreshold: { type: "string", default: "1" },
+      force: { type: "boolean" },
     },
   });
 
@@ -309,6 +311,24 @@ async function main() {
         )
       ),
   );
+
+  if (
+    Args.fixOrphaned &&
+    !Args.force &&
+    (orphanedPaths.length / allPaths.length) * 100 >
+      Number(Args.safetyThreshold)
+  ) {
+    const threshold = Number(Args.safetyThreshold);
+    console.error(orphanedPaths);
+    throw new Error(
+      `Orphans to delete (${
+        orphanedPaths.length
+      }) exceeded ${threshold}% of total (${allPaths.length}).
+To execute, rerun with --force --safetyThreshold ${Math.ceil(
+        (orphanedPaths.length / allPaths.length) * 100,
+      )}.`,
+    );
+  }
 
   let totalSize = 0;
   for (const orphan of orphanedPaths) {
