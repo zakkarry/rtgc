@@ -1,7 +1,7 @@
 import du from "du";
 import { filesize } from "filesize";
 import { statSync } from "fs";
-import { readdir, realpath, rm, stat } from "fs/promises";
+import { readdir, readlink, realpath, rm, stat } from "fs/promises";
 import { dirname, join, normalize, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
 import xmlrpc from "xmlrpc";
@@ -115,11 +115,12 @@ async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
 
   const realPaths = (
     await Promise.all(
-      symlinks.map(async (s) => {
+      symlinks.map(async (symlinkPath) => {
         try {
-          return [await realpath(s)];
+          const linkTarget = await readlink(symlinkPath);
+          return [resolve(symlinkPath, linkTarget)];
         } catch (e) {
-          console.error("skipping broken link:", s);
+          console.error("skipping broken link:", symlinkPath);
           return [];
         }
       }),
