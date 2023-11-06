@@ -138,6 +138,8 @@ async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
           .slice(0, dataDir.split(sep).length + 1)
           .join(sep),
       );
+    } else {
+      console.log("Skipping escaping symlink:", filePath);
     }
     return acc;
   }, new Set());
@@ -217,7 +219,7 @@ async function main() {
 
   const allPaths = await Promise.all(Args.dataDir.flatMap(getChildPaths));
 
-  const pathsInSession = session.map((e) => e.basePath);
+  const pathsInSession = new Set(session.map((e) => e.basePath));
 
   await fixSymlinks(
     Args.symlinkSource,
@@ -233,8 +235,7 @@ async function main() {
 
   const orphanedPaths = allPaths.filter(
     (path) =>
-      !pathsInSession.includes(path) &&
-      !pathsHoldingSymlinkTargets.includes(path),
+      !pathsInSession.has(path) && !pathsHoldingSymlinkTargets.has(path),
   );
 
   let totalSize = 0;
