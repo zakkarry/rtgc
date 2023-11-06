@@ -1,6 +1,6 @@
 import du from "du";
 import { filesize } from "filesize";
-import { readdir, realpath, rm } from "fs/promises";
+import { readdir, realpath, rm, stat } from "fs/promises";
 import { dirname, join, normalize, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
 import xmlrpc from "xmlrpc";
@@ -81,10 +81,12 @@ async function getChildPaths(dataDir) {
 async function getSymbolicLinksRecursive(dir) {
   const dirents = await readdir(dir, { withFileTypes: true });
   return Promise.all(
-    dirents.flatMap((dirent) => {
+    dirents.flatMap(async (dirent) => {
       const child = join(dir, dirent.name);
       if (dirent.isDirectory()) {
         return getSymbolicLinksRecursive(child);
+      } else if (dirent.isSymbolicLink() && (await stat(child)).isDirectory()) {
+        return getSymbolicLinksRecursive(dir);
       } else if (dirent.isSymbolicLink()) {
         return [child];
       } else {
