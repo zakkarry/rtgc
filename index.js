@@ -113,8 +113,6 @@ async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
     await Promise.all(symlinkSourceRoots.map(getSymbolicLinksRecursive))
   ).flat();
 
-  console.log(symlinks);
-
   const realPaths = (
     await Promise.all(
       symlinks.map(async (symlinkPath) => {
@@ -135,12 +133,16 @@ async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
     const dataDir = dataDirs.find((dataDir) =>
       normalize(filePath).startsWith(resolve(dataDir)),
     );
-    roots.add(
-      filePath
-        .split(sep)
-        .slice(0, dataDir.split(sep).length + 1)
-        .join(sep),
-    );
+    if (!dataDir) {
+      console.log("symlink points outside dataDirs", filePath);
+    } else {
+      roots.add(
+        filePath
+          .split(sep)
+          .slice(0, dataDir.split(sep).length + 1)
+          .join(sep),
+      );
+    }
     return roots;
   }, new Set());
   console.log(roots);
