@@ -238,6 +238,7 @@ async function main() {
       !pathsInSession.has(path) && !pathsHoldingSymlinkTargets.has(path),
   );
 
+  console.log(orphanedPaths);
   let totalSize = 0;
   for (const orphan of orphanedPaths) {
     const size = await du(orphan);
