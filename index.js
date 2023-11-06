@@ -119,7 +119,7 @@ async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
       symlinks.map(async (symlinkPath) => {
         try {
           const linkTarget = await readlink(symlinkPath);
-          return [resolve(symlinkPath, linkTarget)];
+          return [resolve(dirname(symlinkPath), linkTarget)];
         } catch (e) {
           console.error("skipping broken link:", symlinkPath);
           return [];
