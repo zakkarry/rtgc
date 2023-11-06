@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/RtorrentCleaner.iml" filepath="$PROJECT_DIR$/.idea/RtorrentCleaner.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/rtgc.iml" filepath="$PROJECT_DIR$/.idea/rtgc.iml" />
     </modules>
   </component>
 </project>
