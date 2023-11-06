@@ -313,6 +313,14 @@ async function main() {
     } else {
       console.log("Would remove orphan", filesize(size), orphan);
     }
+    for (const torrent of session.filter((t) => t.basePath === orphan)) {
+      if (Args.fixOrphaned) {
+        await rtorrent.removeTorrent(torrent.infoHash);
+        console.log("\tRemoved dangling torrent", torrent);
+      } else {
+        console.log("\tWould remove dangling torrent", torrent);
+      }
+    }
   }
 
   console.log(
