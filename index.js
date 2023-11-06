@@ -2,7 +2,15 @@ import du from "du";
 import { filesize } from "filesize";
 import { statSync } from "fs";
 import { readdir, readlink, realpath, rm, stat } from "fs/promises";
-import { dirname, join, normalize, resolve, sep } from "node:path";
+import {
+  dirname,
+  join,
+  normalize,
+  resolve,
+  sep,
+  delimiter,
+  relative,
+} from "node:path";
 import { parseArgs } from "node:util";
 import { log } from "util";
 import xmlrpc from "xmlrpc";
@@ -128,8 +136,6 @@ async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
     )
   ).flat();
 
-  console.log(realPaths);
-
   const roots = realPaths.reduce((roots, filePath) => {
     const dataDir = dataDirs.find((d) =>
       normalize(filePath).startsWith(resolve(d)),
@@ -149,6 +155,34 @@ async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
   console.log(roots);
 }
 
+async function fixSymlinks(
+  symlinkSourceRoots,
+  improperSymlinkSegment,
+  fixImproperSymlinkSegment,
+) {
+  if (improperSymlinkSegment) {
+    const symlinks = (
+      await Promise.all(symlinkSourceRoots.map(getSymbolicLinksRecursive))
+    ).flat();
+    for (const symlink of symlinks) {
+      const rawLinkTarget = await readlink(symlink);
+      if (rawLinkTarget.contains(improperSymlinkSegment)) {
+        console.log(
+          "Would fix improper symlink:",
+          rawLinkTarget,
+          relative(
+            dirname(symlink),
+            rawLinkTarget.replace(
+              improperSymlinkSegment,
+              fixImproperSymlinkSegment,
+            ),
+          ),
+        );
+      }
+    }
+  }
+}
+
 async function main() {
   const { values: Args } = parseArgs({
     options: {
@@ -157,6 +191,8 @@ async function main() {
       unregistered: { type: "boolean" },
       orphaned: { type: "boolean" },
       symlinkSource: { type: "string", multiple: true },
+      improperSymlinkSegment: { type: "string" },
+      fixImproperSymlinkSegment: { type: "string" },
     },
   });
   const rtorrent = new RTorrent(Args.rpc);
@@ -181,6 +217,12 @@ async function main() {
   const allPaths = await Promise.all(Args.dataDir.flatMap(getChildPaths));
 
   const pathsInSession = session.map((e) => e.basePath);
+
+  await fixSymlinks(
+    Args.symlinkSource,
+    Args.improperSymlinkSegment,
+    Args.fixImproperSymlinkSegment,
+  );
 
   const pathsHoldingSymlinkTargets = await findSymlinkTargetPaths(
     Args.dataDir,
