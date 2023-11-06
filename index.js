@@ -173,7 +173,6 @@ async function fixSymlinks(
               fixImproperSymlinkSegment,
             ),
           )}`,
-          rawLinkTarget,
         );
       }
     }
