@@ -86,7 +86,7 @@ async function getSymbolicLinksRecursive(dir) {
       if (dirent.isDirectory()) {
         return getSymbolicLinksRecursive(child);
       } else if (dirent.isSymbolicLink() && (await stat(child)).isDirectory()) {
-        return getSymbolicLinksRecursive(dir);
+        return getSymbolicLinksRecursive(child);
       } else if (dirent.isSymbolicLink()) {
         return [child];
       } else {
