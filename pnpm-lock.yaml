@@ -5,6 +5,12 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  du:
+    specifier: ^1.0.0
+    version: 1.0.0
+  filesize:
+    specifier: ^10.1.0
+    version: 10.1.0
   xmlrpc:
     specifier: ^1.3.2
     version: 1.3.2
@@ -33,6 +39,22 @@ packages:
     dependencies:
       '@types/node': 20.8.10
     dev: true
+
+  /du@1.0.0:
+    resolution: {integrity: sha512-w00+6XpIq924IvDLyOOx5HFO4KwH6YV6buqFx6og/ErTaJ34kVOyI+Q2f+X8pvZkDoEgT6xspA4iYSN99mqPDA==}
+    hasBin: true
+    dependencies:
+      map-async: 0.1.1
+    dev: false
+
+  /filesize@10.1.0:
+    resolution: {integrity: sha512-GTLKYyBSDz3nPhlLVPjPWZCnhkd9TrrRArNcy8Z+J2cqScB7h2McAzR6NBX6nYOoWafql0roY8hrocxnZBv9CQ==}
+    engines: {node: '>= 10.4.0'}
+    dev: false
+
+  /map-async@0.1.1:
+    resolution: {integrity: sha512-nim726/DRF1yuTrx3qNJcFNqJCgiFD98eh/49EdI5LWTspX4whkVvT0hOcMEVJWCijKkp519vCY1uD05Hklc6w==}
+    dev: false
 
   /prettier@3.0.3:
     resolution: {integrity: sha512-L/4pUDMxcNa8R/EthV08Zt42WBO4h1rarVtK0K+QJG0X187OLo7l699jWw0GKuwzkPQ//jMFA/8Xm6Fh3J/DAg==}
