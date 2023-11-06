@@ -160,7 +160,7 @@ async function fixSymlinks(
   improperSymlinkSegment,
   fixImproperSymlinkSegment,
 ) {
-  if (improperSymlinkSegment) {
+  if (improperSymlinkSegment && fixImproperSymlinkSegment) {
     const symlinks = (
       await Promise.all(symlinkSourceRoots.map(getSymbolicLinksRecursive))
     ).flat();
@@ -168,15 +168,14 @@ async function fixSymlinks(
       const rawLinkTarget = await readlink(symlink);
       if (rawLinkTarget.includes(improperSymlinkSegment)) {
         console.log(
-          "Would fix improper symlink:",
-          rawLinkTarget,
-          relative(
+          `Would fix improper symlink:\n\t${rawLinkTarget}\n\t${relative(
             dirname(symlink),
             rawLinkTarget.replace(
               improperSymlinkSegment,
               fixImproperSymlinkSegment,
             ),
-          ),
+          )}`,
+          rawLinkTarget,
         );
       }
     }
