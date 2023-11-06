@@ -126,6 +126,8 @@ async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
     )
   ).flat();
 
+  console.log(realPaths);
+
   const roots = realPaths.reduce((roots, filePath) => {
     const dataDir = dataDirs.find((dataDir) =>
       normalize(filePath).startsWith(resolve(dataDir)),
