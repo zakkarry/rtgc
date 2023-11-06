@@ -1,6 +1,6 @@
 import du from "du";
 import { filesize } from "filesize";
-import { statSync } from "fs";
+import { rmSync, statSync, symlinkSync, unlinkSync } from "fs";
 import { readdir, readlink, realpath, rm, stat } from "fs/promises";
 import {
   dirname,
@@ -153,27 +153,40 @@ async function findSymlinkTargetPaths(dataDirs, symlinkSourceRoots) {
   return roots;
 }
 
+function editSymlink(path, target) {
+  unlinkSync(path);
+  symlinkSync(target, path);
+}
+
 async function fixSymlinks(
   symlinkSourceRoots,
   improperSymlinkSegment,
-  fixImproperSymlinkSegment,
+  properSymlinkSegment,
+  fixSymlinks,
 ) {
-  if (improperSymlinkSegment && fixImproperSymlinkSegment) {
+  if (improperSymlinkSegment && properSymlinkSegment) {
     const symlinks = (
       await Promise.all(symlinkSourceRoots.map(getSymbolicLinksRecursive))
     ).flat();
     for (const symlink of symlinks) {
       const rawLinkTarget = await readlink(symlink);
+
       if (rawLinkTarget.includes(improperSymlinkSegment)) {
-        console.log(
-          `Would fix improper symlink:\n\t${rawLinkTarget}\n\t${relative(
-            dirname(symlink),
-            rawLinkTarget.replace(
-              improperSymlinkSegment,
-              fixImproperSymlinkSegment,
-            ),
-          )}`,
+        const properLinkTarget = relative(
+          dirname(symlink),
+          rawLinkTarget.replace(improperSymlinkSegment, properSymlinkSegment),
         );
+
+        if (fixSymlinks) {
+          console.log(
+            `Fixing improper symlink:\n\t${rawLinkTarget}\n\t${properLinkTarget}`,
+          );
+          editSymlink(symlink, properLinkTarget);
+        } else {
+          console.log(
+            `Would fix improper symlink:\n\t${rawLinkTarget}\n\t${properLinkTarget}`,
+          );
+        }
       }
     }
   }
@@ -188,7 +201,8 @@ async function main() {
       orphaned: { type: "boolean" },
       symlinkSource: { type: "string", multiple: true },
       improperSymlinkSegment: { type: "string" },
-      fixImproperSymlinkSegment: { type: "string" },
+      properSymlinkSegment: { type: "string" },
+      fixSymlinks: { type: "boolean" },
     },
   });
   const rtorrent = new RTorrent(Args.rpc);
@@ -217,7 +231,8 @@ async function main() {
   await fixSymlinks(
     Args.symlinkSource,
     Args.improperSymlinkSegment,
-    Args.fixImproperSymlinkSegment,
+    Args.properSymlinkSegment,
+    Args.fixSymlinks,
   );
 
   const pathsHoldingSymlinkTargets = await findSymlinkTargetPaths(
