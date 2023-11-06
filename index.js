@@ -243,12 +243,19 @@ async function main() {
   const downloadList = await rtorrent.downloadList();
 
   const session = [];
-  if (Args.retainSolelyForSeeding || Args.fixUnregistered) {
+  if (
+    Args.retainSolelyForSeeding ||
+    Args.fixUnregistered ||
+    Args.fixMissingFiles
+  ) {
     for (const [i, infoHash] of downloadList.entries()) {
       printProgress(i, downloadList.length);
       const torrent = await rtorrent.getTorrent(infoHash);
 
-      if (torrent.message.toLowerCase().includes("unregistered")) {
+      if (
+        torrent.message.toLowerCase().includes("unregistered") ||
+        torrent.message.toLowerCase().includes("not registered")
+      ) {
         if (Args.fixUnregistered) {
           await rtorrent.removeTorrent(infoHash);
           console.log("Removed unregistered torrent:", torrent);
