@@ -166,7 +166,7 @@ async function fixSymlinks(
     ).flat();
     for (const symlink of symlinks) {
       const rawLinkTarget = await readlink(symlink);
-      if (rawLinkTarget.contains(improperSymlinkSegment)) {
+      if (rawLinkTarget.includes(improperSymlinkSegment)) {
         console.log(
           "Would fix improper symlink:",
           rawLinkTarget,
