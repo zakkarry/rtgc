@@ -226,6 +226,21 @@ async function findHardlinkTargetPaths(dataDirs) {
 	return getDedupedBasePathsFromFiles(allHardlinks, dataDirs);
 }
 
+function isUnregistered(torrent) {
+	const message = torrent.message.toLowerCase();
+	const keywords = [
+		"unregistered",
+		"not registered",
+		"this torrent does not exist",
+		"trumped",
+		"infohash not found",
+		"complete season uploaded",
+		"torrent not found",
+	].map((e) => e.toLowerCase()); // just to be safe
+
+	return keywords.some((keyword) => message.includes(keyword));
+}
+
 async function main() {
 	const { values: Args } = parseArgs({
 		options: {
@@ -257,10 +272,7 @@ async function main() {
 			printProgress(i, downloadList.length);
 			const torrent = await rtorrent.getTorrent(infoHash);
 
-			if (
-				torrent.message.toLowerCase().includes("unregistered") ||
-				torrent.message.toLowerCase().includes("not registered")
-			) {
+			if (isUnregistered(torrent)) {
 				if (Args.fixUnregistered) {
 					await rtorrent.removeTorrent(infoHash);
 					console.log("Removed unregistered torrent:", torrent);
