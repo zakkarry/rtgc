@@ -1,6 +1,6 @@
 import { readdir, readlink, mkdir, link } from "node:fs/promises";
 import { parseArgs } from "node:util";
-import { join, dirname, basename, relative } from "node:path";
+import { join, dirname, basename, relative, resolve } from "node:path";
 
 const options = {
 	"symlink-dir": { type: "string", required: true },
@@ -14,6 +14,13 @@ const symlinkDir = values["symlink-dir"];
 const rawDir = values["raw-dir"];
 const outputDir = values["output-dir"];
 const execute = values["execute"];
+
+console.log('CLI arguments:',{
+	symlinkDir,
+	rawDir,
+	outputDir,
+	execute
+})
 
 async function processSymlinks(dir) {
 	const entries = await readdir(dir, { withFileTypes: true });
@@ -29,7 +36,7 @@ async function processSymlinks(dir) {
 
 async function handleSymlink(symlinkPath) {
 	try {
-		const targetPath = await readlink(symlinkPath);
+		const targetPath = resolve(dirname(symlinkPath), await readlink(symlinkPath));
 		const rawFilename = basename(targetPath);
 		const symlinkRelativeFromSymlinkRoot = relative(symlinkDir, symlinkPath);
 		const relativeDir = dirname(symlinkRelativeFromSymlinkRoot);
