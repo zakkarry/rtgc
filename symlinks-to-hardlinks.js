@@ -15,7 +15,7 @@ const rawDir = values['raw-dir'];
 const outputDir = values['output-dir'];
 const execute = values['execute'];
 
-async function processSymlinks(dir: string) {
+async function processSymlinks(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     const fullPath = join(dir, entry.name);
@@ -27,13 +27,13 @@ async function processSymlinks(dir: string) {
   }
 }
 
-async function handleSymlink(symlinkPath: string) {
+async function handleSymlink(symlinkPath) {
   try {
     const targetPath = await readlink(symlinkPath);
     const rawFilename = basename(targetPath);
     const relativeDir = dirname(relative(symlinkDir, symlinkPath));
     const outputPath = join(outputDir, dirname(relativeDir), rawFilename);
-    
+
     if (!execute) {
       console.log(`[Dry Run] Would hardlink: ${targetPath} -> ${outputPath}`);
       return;
