@@ -4,7 +4,6 @@ import { join, dirname, basename, relative, resolve } from "node:path";
 
 const options = {
 	"symlink-dir": {type: "string"},
-	"raw-dir": {type: "string"},
 	"output-dir": {type: "string"},
 	"execute": { type: "boolean", default: false }
 };
@@ -41,11 +40,6 @@ async function handleSymlink(symlinkPath) {
 		const symlinkRelativeFromSymlinkRoot = relative(symlinkDir, symlinkPath);
 		const relativeDir = dirname(symlinkRelativeFromSymlinkRoot);
 		const outputPath = join(outputDir, relativeDir, rawFilename);
-
-		if (!resolve(targetPath).startsWith(resolve(rawDir))) {
-			console.log(`Skipping symlink ${symlinkPath} because it is not in the raw directory.`);
-			return;
-		}
 
 		if (!execute) {
 			console.log(`[Dry Run] Would hardlink: ${targetPath} -> ${outputPath}`);
