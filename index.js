@@ -236,6 +236,10 @@ function isUnregistered(torrent) {
 		"infohash not found",
 		"complete season uploaded",
 		"torrent not found",
+		"nuked",
+		"dupe",
+		"see: ",
+		"has been deleted",
 	].map((e) => e.toLowerCase()); // just to be safe
 
 	return keywords.some((keyword) => message.includes(keyword));
