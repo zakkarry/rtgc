@@ -40,7 +40,7 @@ async function handleSymlink(symlinkPath) {
 		const rawFilename = basename(targetPath);
 		const symlinkRelativeFromSymlinkRoot = relative(symlinkDir, symlinkPath);
 		const relativeDir = dirname(symlinkRelativeFromSymlinkRoot);
-		const outputPath = join(outputDir, dirname(relativeDir), rawFilename);
+		const outputPath = join(outputDir, relativeDir, rawFilename);
 
 		if (!execute) {
 			console.log(`[Dry Run] Would hardlink: ${targetPath} -> ${outputPath}`);
