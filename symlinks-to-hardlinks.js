@@ -1,5 +1,5 @@
-import {exists} from "node:fs";
-import { readdir, readlink, mkdir, link } from "node:fs/promises";
+import {existsSync} from "node:fs";
+import {readdir, readlink, mkdir, link} from "node:fs/promises";
 import { parseArgs } from "node:util";
 import { join, dirname, basename, relative, resolve } from "node:path";
 
@@ -42,7 +42,7 @@ async function handleSymlink(symlinkPath) {
 		const relativeDir = dirname(symlinkRelativeFromSymlinkRoot);
 		const outputPath = join(outputDir, relativeDir, rawFilename);
 
-		if (!exists(targetPath)) {
+		if (!existsSync(targetPath)) {
 			console.error(`Target of symlink ${symlinkPath} does not exist: ${targetPath}`);
 			return;
 		}
