@@ -1,37 +1,54 @@
-# rtgc
+# React + TypeScript + Vite
 
-A mishmash of garbage-collection tasks designed around
-large-scale rTorrent installations.
-Similar to [qbit_manage](https://github.com/StuffAnThings/qbit_manage)
-but for rTorrent.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## features
+Currently, two official plugins are available:
 
--   remove unregistered torrents
--   remove torrents with missing files errors
--   remove all the files that Sonarr and Radarr upgraded from and then never deleted
-    -   also remove torrents referencing those files (optionally)
--   find-and-replace symlink targets that have been the victim of `realpath` (this one's pretty specific to my setup)
--   remove any files that have no hardlinks, symlinks pointing to them, or optionally, seeding torrents pointing to them.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-No tests, no support. Use at your own risk.
-This tool could delete all your files pretty easily.
+## Expanding the ESLint configuration
 
-## options
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
 ```js
-{
-	rpc: { type: "string" },
-	dataDir: { short: "d", type: "string", multiple: true },
-	fixUnregistered: { type: "boolean" },
-	fixOrphaned: { type: "boolean" },
-	symlinkSource: { type: "string", multiple: true },
-	improperSymlinkSegment: { type: "string" },
-	properSymlinkSegment: { type: "string" },
-	fixSymlinks: { type: "boolean" },
-	retainSolelyForSeeding: { type: "boolean" },
-	fixMissingFiles: { type: "boolean" },
-	safetyThreshold: { type: "string", default: "1" },
-	force: { type: "boolean" },
-}
+export default tseslint.config({
+  extends: [
+    // Remove ...tseslint.configs.recommended and replace with this
+    ...tseslint.configs.recommendedTypeChecked,
+    // Alternatively, use this for stricter rules
+    ...tseslint.configs.strictTypeChecked,
+    // Optionally, add this for stylistic rules
+    ...tseslint.configs.stylisticTypeChecked,
+  ],
+  languageOptions: {
+    // other options...
+    parserOptions: {
+      project: ['./tsconfig.node.json', './tsconfig.app.json'],
+      tsconfigRootDir: import.meta.dirname,
+    },
+  },
+})
+```
+
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default tseslint.config({
+  plugins: {
+    // Add the react-x and react-dom plugins
+    'react-x': reactX,
+    'react-dom': reactDom,
+  },
+  rules: {
+    // other rules...
+    // Enable its recommended typescript rules
+    ...reactX.configs['recommended-typescript'].rules,
+    ...reactDom.configs.recommended.rules,
+  },
+})
 ```

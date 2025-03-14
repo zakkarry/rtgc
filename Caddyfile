@@ -1,0 +1,4 @@
+localhost {
+    reverse_proxy /trpc/* http://localhost:3000
+    reverse_proxy /* http://localhost:5173
+}

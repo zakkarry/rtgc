@@ -1,0 +1,19 @@
+{
+  "jwtSecret": "9e7e47dacd471fb4e13811eded17eb3b",
+  "rules": [
+    {
+      "ruleType": "keep",
+      "matchType": "substring",
+      "substring": "unable to parse bencoded data"
+    },
+    {
+      "ruleType": "drop",
+      "matchType": "substring",
+      "substring": "unregistered torrent"
+    }
+  ],
+  "user": {
+    "username": "mmgoodnow",
+    "passwordHash": "$2b$10$TlOrjdkFU2omaHeNBymNHOMs5DTgwTeOp77pWU9OnSosk8rqrzuQO"
+  }
+}

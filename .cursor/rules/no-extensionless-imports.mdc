@@ -1,0 +1,9 @@
+---
+description: Adding imports in typescript code
+globs: server/**/*.ts
+alwaysApply: false
+---
+
+# No extensionless imports
+
+We are using `node --experimental-strip-types` without a transpilation step, so all relative imports should end in a .ts extension to properly resolve.
