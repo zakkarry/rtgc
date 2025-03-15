@@ -8,6 +8,8 @@ import { protectedProcedure, publicProcedure, router } from "./trpc.ts";
 import { createContext } from "./context.ts";
 import { authorize, generateJwt, signUp } from "./auth.ts";
 import { getRules, getUser } from "./db.ts";
+import { TRPCError } from "@trpc/server";
+import fastifyCookie from "@fastify/cookie";
 
 const appRouter = router({
   logIn: publicProcedure
@@ -19,14 +21,18 @@ const appRouter = router({
       }
       if (authorize(input)) {
         ctx.setSession(generateJwt(input));
+      } else {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
       }
-      throw new Error("Invalid credentials");
     }),
   authStatus: publicProcedure.query(async ({ ctx }) => {
     return {
       userExists: getUser() !== undefined,
       isLoggedIn: ctx.user !== undefined,
     };
+  }),
+  logOut: protectedProcedure.mutation(async ({ ctx }) => {
+    ctx.deleteSession();
   }),
   getRules: protectedProcedure.query(getRules),
 });
@@ -37,8 +43,10 @@ const fastify = Fastify({
   logger: true,
 });
 
+fastify.register(fastifyCookie);
+
 fastify.register(fastifyTRPCPlugin, {
-  prefix: "/trpc",
+  prefix: "/rtgc/trpc",
   trpcOptions: {
     router: appRouter,
     createContext,

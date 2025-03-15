@@ -1,14 +1,11 @@
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import React, { useCallback, useReducer } from "react";
-import { trpc } from "./utils/trpc";
+import { Button, Field, Heading, Input, VStack, Text } from "@chakra-ui/react";
 import {
-  Button,
-  Container,
-  Heading,
-  Input,
-  VStack,
-  Flex,
-} from "@chakra-ui/react";
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+import React, { useReducer } from "react";
+import { trpc } from "./utils/trpc";
 
 function useDOMState(initialState: string) {
   return useReducer(
@@ -18,55 +15,79 @@ function useDOMState(initialState: string) {
   );
 }
 
-export default function LoginPage() {
-  const { data: authStatus } = useSuspenseQuery(trpc.authStatus.queryOptions());
-  const { mutate: login } = useMutation(trpc.logIn.mutationOptions());
-
+export default function LoginPage({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [username, setUsername] = useDOMState("");
   const [password, setPassword] = useDOMState("");
-
-  const handleSubmit = useCallback(
-    (evt: React.FormEvent<HTMLFormElement>) => {
-      evt.preventDefault();
-      login({ username, password });
-    },
-    [login, password, username]
+  const { data: authStatus } = useSuspenseQuery(trpc.authStatus.queryOptions());
+  const { mutate: login, error } = useMutation(
+    trpc.logIn.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: trpc.authStatus.queryKey() });
+      },
+    })
   );
+  const { mutate: logout } = useMutation(
+    trpc.logOut.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: trpc.authStatus.queryKey() });
+      },
+    })
+  );
+  function handleSubmit(evt: React.FormEvent<HTMLFormElement>) {
+    evt.preventDefault();
+    login({ username, password });
+  }
+
+  if (authStatus.isLoggedIn) {
+    return (
+      <div>
+        {children}
+        <Button onClick={() => logout()}>Log out</Button>
+      </div>
+    );
+  }
 
   return (
-    <Flex minH="100vh" bg="gray.50" align="center" justify="center">
-      <Container maxW="sm">
-        <VStack spacing={8} mx="auto" maxW="md" py={12}>
-          <Heading>{authStatus.userExists ? "Log in" : "Sign up"}</Heading>
-
-          <form style={{ width: "100%" }} onSubmit={handleSubmit}>
-            <VStack spacing={4}>
-              <FormControl>
-                <FormLabel htmlFor="username-input">Username</FormLabel>
-                <Input
-                  id="username-input"
-                  value={username}
-                  onChange={setUsername}
-                />
-              </FormControl>
-
-              <FormControl>
-                <FormLabel htmlFor="password-input">Password</FormLabel>
-                <Input
-                  type="password"
-                  id="password-input"
-                  value={password}
-                  onChange={setPassword}
-                />
-              </FormControl>
-
-              <Button type="submit" colorScheme="green" width="100%">
-                Log in
-              </Button>
-            </VStack>
-          </form>
-        </VStack>
-      </Container>
-    </Flex>
+    <form onSubmit={handleSubmit}>
+      <VStack
+        align="stretch"
+        maxW="md"
+        mx="auto"
+        mt={8}
+        p={6}
+        borderWidth={1}
+        borderRadius="lg"
+        boxShadow="lg"
+      >
+        <Heading size="lg" textAlign="center">
+          {authStatus.userExists ? "Log in" : "Sign up"}
+        </Heading>
+        {error && <Text color="red">Incorrect username or password.</Text>}
+        <Field.Root>
+          <Field.Label>Username</Field.Label>
+          <Field.RequiredIndicator />
+          <Input
+            type="text"
+            value={username}
+            onChange={setUsername}
+            placeholder="Enter username"
+          />
+        </Field.Root>
+        <Field.Root>
+          <Field.Label>Password</Field.Label>
+          <Field.RequiredIndicator />
+          <Input
+            type="password"
+            value={password}
+            onChange={setPassword}
+            placeholder="Enter password"
+          />
+        </Field.Root>
+        <Button type="submit" colorScheme="blue" size="lg" width="full">
+          {authStatus.userExists ? "Log in" : "Sign up"}
+        </Button>
+      </VStack>
+    </form>
   );
 }

@@ -8,6 +8,9 @@ dependencies:
   '@chakra-ui/react':
     specifier: ^3.13.0
     version: 3.13.0(@emotion/react@11.14.0)(react-dom@19.0.0)(react@19.0.0)
+  '@fastify/cookie':
+    specifier: ^11.0.2
+    version: 11.0.2
   '@tanstack/react-query':
     specifier: ^5.67.3
     version: 5.67.3(react@19.0.0)
@@ -663,6 +666,13 @@ packages:
       ajv: 8.17.1
       ajv-formats: 3.0.1(ajv@8.17.1)
       fast-uri: 3.0.6
+    dev: false
+
+  /@fastify/cookie@11.0.2:
+    resolution: {integrity: sha512-GWdwdGlgJxyvNv+QcKiGNevSspMQXncjMZ1J8IvuDQk0jvkzgWWZFNC2En3s+nHndZBGV8IbLwOI/sxCZw/mzA==}
+    dependencies:
+      cookie: 1.0.2
+      fastify-plugin: 5.0.1
     dev: false
 
   /@fastify/error@4.0.0:
@@ -2309,6 +2319,10 @@ packages:
 
   /fast-uri@3.0.6:
     resolution: {integrity: sha512-Atfo14OibSv5wAp4VWNsFYE1AchQRTv9cBGWET4pZWHzYshFSS9NQI6I57rdKn9croWVMbYFbLhJ+yJvmZIIHw==}
+    dev: false
+
+  /fastify-plugin@5.0.1:
+    resolution: {integrity: sha512-HCxs+YnRaWzCl+cWRYFnHmeRFyR5GVnJTAaCJQiYzQSDwK9MgJdyAsuL3nh0EWRCYMgQ5MeziymvmAhUHYHDUQ==}
     dev: false
 
   /fastify@5.2.1:
