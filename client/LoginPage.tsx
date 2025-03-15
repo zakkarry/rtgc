@@ -40,12 +40,7 @@ export default function LoginPage({ children }: { children: React.ReactNode }) {
   }
 
   if (authStatus.isLoggedIn) {
-    return (
-      <div>
-        {children}
-        <Button onClick={() => logout()}>Log out</Button>
-      </div>
-    );
+    return children;
   }
 
   return (
