@@ -23,15 +23,24 @@ dependencies:
   '@trpc/tanstack-react-query':
     specifier: 11.0.0-rc.828
     version: 11.0.0-rc.828(@tanstack/react-query@5.67.3)(@trpc/client@11.0.0-rc.828)(@trpc/server@11.0.0-rc.828)(react-dom@19.0.0)(react@19.0.0)(typescript@5.7.3)
+  '@types/du':
+    specifier: ^1.0.3
+    version: 1.0.3
   '@types/jsonwebtoken':
     specifier: ^9.0.9
     version: 9.0.9
   bcryptjs:
     specifier: ^3.0.2
     version: 3.0.2
+  du:
+    specifier: ^1.0.0
+    version: 1.0.0
   fastify:
     specifier: ^5.2.1
     version: 5.2.1
+  filesize:
+    specifier: ^10.1.6
+    version: 10.1.6
   jsonwebtoken:
     specifier: ^9.0.2
     version: 9.0.2
@@ -1146,6 +1155,10 @@ packages:
       typescript: 5.7.3
     dev: false
 
+  /@types/du@1.0.3:
+    resolution: {integrity: sha512-mVa0bfkEeNXqAca4oiGrxsfsYwLPFdQJbsF+Z/8KBaRJKtzTGF2r1Tou4oIsq/bvePzffrjIDrXNtPDhjNGMGw==}
+    dev: false
+
   /@types/estree@1.0.6:
     resolution: {integrity: sha512-AYnb1nQyY49te+VRAVgmzfcgjYS91mY5P0TKUDCLEM+gNnA+3T6rWITXRLYCpahpqSQbN5cE+gHpnPyXjHWxcw==}
     dev: true
@@ -2099,6 +2112,13 @@ packages:
     engines: {node: '>=6'}
     dev: false
 
+  /du@1.0.0:
+    resolution: {integrity: sha512-w00+6XpIq924IvDLyOOx5HFO4KwH6YV6buqFx6og/ErTaJ34kVOyI+Q2f+X8pvZkDoEgT6xspA4iYSN99mqPDA==}
+    hasBin: true
+    dependencies:
+      map-async: 0.1.1
+    dev: false
+
   /ecdsa-sig-formatter@1.0.11:
     resolution: {integrity: sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ==}
     dependencies:
@@ -2356,6 +2376,11 @@ packages:
     dependencies:
       flat-cache: 4.0.1
     dev: true
+
+  /filesize@10.1.6:
+    resolution: {integrity: sha512-sJslQKU2uM33qH5nqewAwVB2QgR6w1aMNsYUp3aN5rMRyXEwJGmZvaWzeJFNTOXWlHQyBFCWrdj3fV/fsTOX8w==}
+    engines: {node: '>= 10.4.0'}
+    dev: false
 
   /fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
@@ -2658,6 +2683,10 @@ packages:
     engines: {node: '>=18'}
     dependencies:
       steno: 4.0.2
+    dev: false
+
+  /map-async@0.1.1:
+    resolution: {integrity: sha512-nim726/DRF1yuTrx3qNJcFNqJCgiFD98eh/49EdI5LWTspX4whkVvT0hOcMEVJWCijKkp519vCY1uD05Hklc6w==}
     dev: false
 
   /merge2@1.4.1:
