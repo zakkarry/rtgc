@@ -1,13 +1,16 @@
 import { Flex, Box, Text, Button } from "@chakra-ui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { trpc } from "./utils/trpc";
+import { GarbageCollection } from "./GarbageCollection";
 
 export function Home() {
   const queryClient = useQueryClient();
   const { mutate: logout } = useMutation(
-    trpc.logOut.mutationOptions({
+    trpc.auth.logOut.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: trpc.authStatus.queryKey() });
+        queryClient.invalidateQueries({
+          queryKey: trpc.auth.authStatus.queryKey(),
+        });
       },
     })
   );
@@ -30,7 +33,7 @@ export function Home() {
         </Button>
       </Flex>
       <Box p={4}>
-        <h1>Home</h1>
+        <GarbageCollection />
       </Box>
     </div>
   );

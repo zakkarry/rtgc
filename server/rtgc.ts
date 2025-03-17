@@ -1,8 +1,14 @@
 import du from "du";
 import { filesize } from "filesize";
 import { readdir, rm, stat } from "node:fs/promises";
-import { dirname, join, normalize, resolve, sep } from "node:path";
-import { RTorrent, isUnregistered, TorrentInfo } from "./rtorrent.ts";
+import { join, normalize, resolve, sep } from "node:path";
+import { RTorrent } from "./rtorrent.ts";
+import type {
+  CleanupResult,
+  ProblemPath,
+  ScanResult,
+  TorrentInfo,
+} from "./types.ts";
 
 function printProgress(i: number, total: number): void {
   const ratio = Math.floor((i * 100) / total);
@@ -78,76 +84,47 @@ async function findHardlinkTargetPaths(
   return getDedupedBasePathsFromFiles(allHardlinks, dataDirs);
 }
 
-export interface RTGCOptions {
-  rpc: string;
-  dataDirs: string[];
-  fixUnregistered?: boolean;
-  fixOrphaned?: boolean;
-  fixMissingFiles?: boolean;
-  safetyThreshold?: number;
-  force?: boolean;
-}
-
-export interface OrphanedPath {
-  path: string;
-  size: number;
-}
-
-export interface RTGCResult {
-  orphanedPaths: OrphanedPath[];
-  totalSize: number;
-  removedTorrents: TorrentInfo[];
-}
-
-export async function cleanTorrents(options: RTGCOptions): Promise<RTGCResult> {
-  const {
-    rpc,
-    dataDirs,
-    fixUnregistered = false,
-    fixOrphaned = false,
-    fixMissingFiles = false,
-    safetyThreshold = 1,
-    force = false,
-  } = options;
-
-  const rtorrent = new RTorrent(rpc);
+export async function scanTorrents(
+  rtorrent: RTorrent,
+  dataDirs: string[]
+): Promise<ScanResult> {
   const downloadList = await rtorrent.downloadList();
+  const torrents = await rtorrent.getTorrentsBatched(downloadList);
 
+  const problemPaths: ProblemPath[] = [];
   const session: TorrentInfo[] = [];
-  const removedTorrents: TorrentInfo[] = [];
 
-  if (fixUnregistered || fixMissingFiles) {
-    for (const [i, infoHash] of downloadList.entries()) {
-      printProgress(i, downloadList.length);
-      const torrent = await rtorrent.getTorrent(infoHash);
+  // Scan torrents first
+  for (const [i, torrent] of torrents.entries()) {
+    printProgress(i, torrents.length);
+    const stats = await stat(torrent.basePath).catch(() => null);
 
-      if (isUnregistered(torrent)) {
-        if (fixUnregistered) {
-          await rtorrent.removeTorrent(infoHash);
-          console.log("Removed unregistered torrent:", torrent);
-          removedTorrents.push(torrent);
-        } else {
-          console.log("Would remove unregistered torrent:", torrent);
-        }
-      } else if (
-        torrent.message.trim() ===
-        "Download registered as completed, but hash check returned unfinished chunks."
-      ) {
-        if (fixMissingFiles) {
-          await rtorrent.removeTorrent(infoHash);
-          console.log("Removed missing files torrent:", torrent);
-          removedTorrents.push(torrent);
-        } else {
-          console.log("Would remove missing files torrent:", torrent);
-        }
-      } else {
-        session.push(torrent);
-      }
+    if (isUnregistered(torrent)) {
+      problemPaths.push({
+        path: torrent.basePath,
+        size: stats?.size ?? 0,
+        type: "unregistered",
+        torrentInfo: torrent,
+        lastModified: stats?.mtime ?? new Date(),
+      });
+    } else if (
+      torrent.message.trim() ===
+      "Download registered as completed, but hash check returned unfinished chunks."
+    ) {
+      problemPaths.push({
+        path: torrent.basePath,
+        size: stats?.size ?? 0,
+        type: "missingFiles",
+        torrentInfo: torrent,
+        lastModified: stats?.mtime ?? new Date(),
+      });
+    } else {
+      session.push(torrent);
     }
   }
 
+  // Then scan for orphaned paths
   const allPaths = (await Promise.all(dataDirs.map(getChildPaths))).flat();
-
   const pathsInSession = new Set(session.map((e) => e.basePath));
   const pathsHoldingHardlinkTargets = await findHardlinkTargetPaths(dataDirs);
 
@@ -156,56 +133,102 @@ export async function cleanTorrents(options: RTGCOptions): Promise<RTGCResult> {
       !(pathsInSession.has(path) || pathsHoldingHardlinkTargets.has(path))
   );
 
-  if (
-    fixOrphaned &&
-    !force &&
-    (orphanedPaths.length / allPaths.length) * 100 > safetyThreshold
-  ) {
-    throw new Error(
-      `Orphans to delete (${
-        orphanedPaths.length
-      }) exceeded ${safetyThreshold}% of total (${allPaths.length}).
-To execute, rerun with force=true and safetyThreshold=${Math.ceil(
-        (orphanedPaths.length / allPaths.length) * 100
-      )}.`
-    );
+  // Add orphaned paths to problem paths
+  for (const path of orphanedPaths) {
+    const stats = await stat(path);
+    const size = await du(path);
+    problemPaths.push({
+      path,
+      size,
+      type: "orphaned",
+      lastModified: stats.mtime,
+    });
   }
 
-  let totalSize = 0;
-  const result: OrphanedPath[] = [];
-
-  for (const orphan of orphanedPaths) {
-    const size = await du(orphan);
-    totalSize += size;
-    result.push({ path: orphan, size });
-
-    if (fixOrphaned) {
-      await rm(orphan, { recursive: true });
-      console.log("Removed orphan", filesize(size), orphan);
-    } else {
-      console.log("Would remove orphan", filesize(size), orphan);
-    }
-
-    for (const torrent of session.filter((t) => t.basePath === orphan)) {
-      if (fixOrphaned) {
-        await rtorrent.removeTorrent(torrent.infoHash);
-        console.log("\tRemoved dangling torrent", torrent);
-        removedTorrents.push(torrent);
-      } else {
-        console.log("\tWould remove dangling torrent", torrent);
-      }
-    }
-  }
-
-  console.log(
-    `Found ${orphanedPaths.length} orphaned paths totaling ${filesize(
-      totalSize
-    )}`
+  const totalSize = problemPaths.reduce((sum, p) => sum + p.size, 0);
+  const totalPathSize = (await Promise.all(allPaths.map((p) => du(p)))).reduce(
+    (sum, size) => sum + size,
+    0
   );
 
   return {
-    orphanedPaths: result,
+    problemPaths,
     totalSize,
-    removedTorrents,
+    totalPaths: allPaths.length,
+    percentageOfTotalPaths: (problemPaths.length / allPaths.length) * 100,
+    percentageOfTotalSize: (totalSize / totalPathSize) * 100,
   };
+}
+
+export async function cleanupTorrents(
+  rtorrent: RTorrent,
+  dataDirs: string[],
+  pathsToRemove: string[]
+): Promise<CleanupResult> {
+  const removedPaths: string[] = [];
+  const removedTorrents: TorrentInfo[] = [];
+  let totalSizeRemoved = 0;
+
+  // Validate all paths are within dataDirs
+  const resolvedDataDirs = dataDirs.map((dir) => resolve(dir));
+  const invalidPaths = pathsToRemove.filter(
+    (path) => !resolvedDataDirs.some((dir) => normalize(path).startsWith(dir))
+  );
+  if (invalidPaths.length > 0) {
+    throw new Error(
+      `Cannot remove paths outside data directories:\n${invalidPaths.join(
+        "\n"
+      )}`
+    );
+  }
+
+  // Build path-to-torrent map once
+  const downloadList = await rtorrent.downloadList();
+  const pathToTorrent = new Map<string, TorrentInfo>();
+  for (const infoHash of downloadList) {
+    const torrent = await rtorrent.getTorrent(infoHash);
+    pathToTorrent.set(torrent.basePath, torrent);
+  }
+
+  for (const path of pathsToRemove) {
+    // Get size before removal
+    const size = await du(path);
+    totalSizeRemoved += size;
+
+    // Check if there's an associated torrent using our map
+    const torrent = pathToTorrent.get(path);
+    if (torrent) {
+      await rtorrent.removeTorrent(torrent.infoHash);
+      removedTorrents.push(torrent);
+    }
+
+    // Remove the path
+    await rm(path, { recursive: true });
+    removedPaths.push(path);
+    console.log("Removed path:", path, "size:", filesize(size));
+  }
+
+  return {
+    removedPaths,
+    removedTorrents,
+    totalSizeRemoved,
+  };
+}
+export function isUnregistered(torrent: TorrentInfo): boolean {
+  const message = torrent.message.toLowerCase();
+  const keywords = [
+    "unregistered",
+    "not registered",
+    "this torrent does not exist",
+    "trumped",
+    "infohash not found",
+    "complete season uploaded",
+    "torrent not found",
+    "nuked",
+    "dupe",
+    "see: ",
+    "has been deleted",
+  ].map((e) => e.toLowerCase()); // just to be safe
+
+  return keywords.some((keyword) => message.includes(keyword));
 }

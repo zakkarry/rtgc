@@ -1,0 +1,8 @@
+---
+description: Capitalization and Casing
+globs: *.ts, *.tsx
+alwaysApply: false
+---
+ # Consistent Casing
+
+ use CamelCase and TitleCase according to normal TypeScript and React conventions. When dealing with abbreviations, use something like HttpRequest rather than HTTPRequest.

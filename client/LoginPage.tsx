@@ -19,21 +19,19 @@ export default function LoginPage({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [username, setUsername] = useDOMState("");
   const [password, setPassword] = useDOMState("");
-  const { data: authStatus } = useSuspenseQuery(trpc.authStatus.queryOptions());
+  const { data: authStatus } = useSuspenseQuery(
+    trpc.auth.authStatus.queryOptions()
+  );
   const { mutate: login, error } = useMutation(
-    trpc.logIn.mutationOptions({
+    trpc.auth.logIn.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: trpc.authStatus.queryKey() });
+        queryClient.invalidateQueries({
+          queryKey: trpc.auth.authStatus.queryKey(),
+        });
       },
     })
   );
-  const { mutate: logout } = useMutation(
-    trpc.logOut.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: trpc.authStatus.queryKey() });
-      },
-    })
-  );
+
   function handleSubmit(evt: React.FormEvent<HTMLFormElement>) {
     evt.preventDefault();
     login({ username, password });
