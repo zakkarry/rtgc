@@ -21,6 +21,11 @@ export const dataDirs = ["/path/to/data1", "/path/to/data2"]; // Replace with yo
 const fastify = Fastify({ logger: true });
 fastify.register(fastifyCookie);
 
+process.on("SIGTERM", () => {
+  console.log("SIGTERM");
+  process.exit(0);
+});
+
 fastify.register(
   async (instance) => {
     instance.register(fastifyTRPCPlugin, {
