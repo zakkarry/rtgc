@@ -31,7 +31,7 @@ export function Settings() {
   const [dataDirsText, setDataDirsText] = useState<string>("");
   const queryClient = useQueryClient();
 
-  const { data } = useSuspenseQuery(trpc.getSettings.queryOptions());
+  const { data } = useSuspenseQuery(trpc.settings.getSettings.queryOptions());
 
   useEffect(() => {
     if (data) {
@@ -45,10 +45,10 @@ export function Settings() {
   }, [data]);
 
   const updateSettingsMutation = useMutation(
-    trpc.updateSettings.mutationOptions({
+    trpc.settings.updateSettings.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: trpc.getSettings.queryKey(),
+          queryKey: trpc.settings.getSettings.queryKey(),
         });
         setOpen(false);
       },

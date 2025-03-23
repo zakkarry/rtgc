@@ -5,7 +5,11 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { useState } from "react";
-import { type ProblemType } from "../server/types";
+import {
+  type ProblemType,
+  type ScanResult,
+  type CleanupResult,
+} from "../server/types";
 import { Settings } from "./Settings";
 import { trpc } from "./utils/trpc";
 
@@ -46,18 +50,24 @@ export function GarbageCollection() {
   const warningBg = "warning.50";
   const warningColor = "warning.700";
 
-  const { data, refetch } = useSuspenseQuery(trpc.scanTorrents.queryOptions());
+  const { data, refetch } = useSuspenseQuery<ScanResult>(
+    trpc.torrents.scanTorrents.queryOptions()
+  );
 
-  const cleanupMutation = useMutation(
-    trpc.cleanupTorrents.mutationOptions({
-      onSuccess: (result) => {
+  const cleanupMutation = useMutation<
+    CleanupResult,
+    Error,
+    { paths: string[] }
+  >(
+    trpc.torrents.cleanupTorrents.mutationOptions({
+      onSuccess: (result: CleanupResult) => {
         console.log("Cleanup successful", result);
         queryClient.invalidateQueries({
-          queryKey: trpc.scanTorrents.queryKey(),
+          queryKey: trpc.torrents.scanTorrents.queryKey(),
         });
         setSelectedPaths([]);
       },
-      onError: (error) => {
+      onError: (error: Error) => {
         console.error("Cleanup failed", error);
       },
     })
@@ -88,9 +98,11 @@ export function GarbageCollection() {
     cleanupMutation.mutate({ paths: selectedPaths });
   };
 
-  const selectedSize = data.problemPaths
-    .filter((p) => selectedPaths.includes(p.path))
-    .reduce((sum, p) => sum + p.size, 0);
+  const selectedSize = data
+    ? data.problemPaths
+        .filter((p) => selectedPaths.includes(p.path))
+        .reduce((sum, p) => sum + p.size, 0)
+    : 0;
 
   if (!data) {
     return (
