@@ -1,71 +1,58 @@
 import fastifyCookie from "@fastify/cookie";
-import { TRPCError } from "@trpc/server";
+import fastifyStatic from "@fastify/static";
 import {
   fastifyTRPCPlugin,
   type FastifyTRPCPluginOptions,
 } from "@trpc/server/adapters/fastify";
 import Fastify from "fastify";
-import { z } from "zod";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createContext } from "./context.ts";
-import { getRules } from "./db.ts";
-import { auth } from "./rpc/auth.ts";
-import { cleanupTorrents, scanTorrents } from "./rtgc.ts";
 import { RTorrent } from "./rtorrent.ts";
-import { protectedProcedure, router } from "./trpc.ts";
-// Initialize RTorrent instance and configuration
-const rtorrent = new RTorrent("http://localhost:8000");
-const dataDirs = ["/path/to/data1", "/path/to/data2"]; // Replace with your actual data directories
+import { type AppRouter } from "./rpc/router.ts";
+import { appRouter } from "./rpc/router.ts";
 
-const appRouter = router({
-  auth: auth,
-  getRules: protectedProcedure.query(getRules),
-  scanTorrents: protectedProcedure.query(async () => {
-    try {
-      return await scanTorrents(rtorrent, dataDirs);
-    } catch (error) {
-      console.error("Error scanning torrents:", error);
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
-  }),
-  cleanupTorrents: protectedProcedure
-    .input(z.object({ paths: z.array(z.string()) }))
-    .mutation(async ({ input }) => {
-      try {
-        return await cleanupTorrents(rtorrent, dataDirs, input.paths);
-      } catch (error) {
-        console.error("Error cleaning up torrents:", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error instanceof Error ? error.message : "Unknown error",
-        });
-      }
-    }),
-});
+const BASE_URL = "/rtgc";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+export const rtorrent = new RTorrent("http://localhost:8000");
+export const dataDirs = ["/path/to/data1", "/path/to/data2"]; // Replace with your actual data directories
 
-export type AppRouter = typeof appRouter;
-
-const fastify = Fastify({
-  logger: true,
-});
-
+const fastify = Fastify({ logger: true });
 fastify.register(fastifyCookie);
 
-fastify.register(fastifyTRPCPlugin, {
-  prefix: "/rtgc/trpc",
-  trpcOptions: {
-    router: appRouter,
-    createContext,
-  } satisfies FastifyTRPCPluginOptions<AppRouter>["trpcOptions"],
+fastify.register(
+  async (instance) => {
+    instance.register(fastifyTRPCPlugin, {
+      prefix: `/trpc`,
+      trpcOptions: {
+        router: appRouter,
+        createContext,
+      } satisfies FastifyTRPCPluginOptions<AppRouter>["trpcOptions"],
+    });
+
+    instance.register(fastifyStatic, {
+      root: join(__dirname, "../dist"),
+      prefix: undefined, // No prefix here since parent plugin has prefix
+      decorateReply: true,
+      wildcard: false,
+    });
+    instance.setNotFoundHandler((_, reply) => {
+      return reply.sendFile("index.html");
+    });
+  },
+  { prefix: BASE_URL }
+);
+fastify.get("/*", (req, reply) => {
+  // Don't redirect if already at the base URL or if it's the base URL with trailing slash
+  if (
+    req.url === BASE_URL ||
+    req.url === `${BASE_URL}/` ||
+    req.url.startsWith(`${BASE_URL}/`)
+  ) {
+    return reply.callNotFound();
+  }
+  return reply.redirect(BASE_URL);
 });
 
-(async () => {
-  try {
-    await fastify.listen({ port: 3000 });
-  } catch (err) {
-    fastify.log.error(err);
-    process.exit(1);
-  }
-})();
+await fastify.listen({ port: 6014 });
