@@ -60,4 +60,4 @@ fastify.get("/*", (req, reply) => {
   return reply.redirect(BASE_URL);
 });
 
-await fastify.listen({ port: 6014 });
+await fastify.listen({ host: "0.0.0.0", port: 6014 });
