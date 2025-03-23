@@ -1,4 +1,13 @@
-import { Badge, Box, Button, Flex, Heading, Text } from "@chakra-ui/react";
+import {
+  Badge,
+  Box,
+  Button,
+  Flex,
+  Heading,
+  Text,
+  Table,
+  Checkbox,
+} from "@chakra-ui/react";
 import {
   useMutation,
   useQueryClient,
@@ -8,6 +17,14 @@ import { useState } from "react";
 import type { ProblemType, CleanupResult } from "../server/types";
 import { Settings } from "./Settings";
 import { trpc } from "./utils/trpc";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogBackdrop,
+} from "./ui/dialog";
 
 function formatSize(bytes: number): string {
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -172,74 +189,68 @@ export function GarbageCollection() {
         </Box>
       ) : (
         <Box overflowX="auto">
-          <table className="min-w-full divide-y divide-border-subtle">
-            <thead className="bg-subtle">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-subtle uppercase tracking-wider">
-                  Select
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-subtle uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-subtle uppercase tracking-wider">
-                  Path
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-subtle uppercase tracking-wider">
-                  Size
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-subtle uppercase tracking-wider">
-                  Last Modified
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-surface divide-y divide-border-subtle">
+          <Table.Root variant="line" size="md">
+            <Table.Header>
+              <Table.Row>
+                <Table.ColumnHeader>Select</Table.ColumnHeader>
+                <Table.ColumnHeader>Type</Table.ColumnHeader>
+                <Table.ColumnHeader>Path</Table.ColumnHeader>
+                <Table.ColumnHeader>Size</Table.ColumnHeader>
+                <Table.ColumnHeader>Last Modified</Table.ColumnHeader>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
               {data.problemPaths.map((problem, index) => (
-                <tr key={index}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <input
-                      type="checkbox"
+                <Table.Row key={index}>
+                  <Table.Cell>
+                    <Checkbox.Root
                       checked={selectedPaths.includes(problem.path)}
-                      onChange={() => handleToggleSelect(problem.path)}
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                    />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                      onCheckedChange={() => handleToggleSelect(problem.path)}
+                    >
+                      <Checkbox.Control />
+                    </Checkbox.Root>
+                  </Table.Cell>
+                  <Table.Cell>
                     <Badge {...getProblemBadgeProps(problem.type)} />
-                  </td>
-                  <td
-                    className="px-6 py-4 whitespace-nowrap max-w-xs truncate"
+                  </Table.Cell>
+                  <Table.Cell
+                    maxW="xs"
+                    textOverflow="ellipsis"
+                    overflow="hidden"
+                    whiteSpace="nowrap"
                     title={problem.path}
                   >
                     {problem.path}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {formatSize(problem.size)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  </Table.Cell>
+                  <Table.Cell>{formatSize(problem.size)}</Table.Cell>
+                  <Table.Cell>
                     {new Date(problem.lastModified).toLocaleString()}
-                  </td>
-                </tr>
+                  </Table.Cell>
+                </Table.Row>
               ))}
-            </tbody>
-          </table>
+            </Table.Body>
+          </Table.Root>
         </Box>
       )}
       {showConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-surface rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-medium mb-4">Confirm Cleanup</h3>
-            <p className="mb-4">
-              Are you sure you want to delete {selectedPaths.length} paths (
-              {formatSize(selectedSize)})? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-2">
+        <DialogRoot isOpen={showConfirm} onClose={() => setShowConfirm(false)}>
+          <DialogBackdrop />
+          <DialogContent>
+            <DialogHeader>Confirm Cleanup</DialogHeader>
+            <DialogBody>
+              <Text>
+                Are you sure you want to delete {selectedPaths.length} paths (
+                {formatSize(selectedSize)})? This action cannot be undone.
+              </Text>
+            </DialogBody>
+            <DialogFooter gap={2}>
               <Button onClick={() => setShowConfirm(false)}>Cancel</Button>
               <Button colorScheme="danger" onClick={confirmCleanup}>
                 Delete
               </Button>
-            </div>
-          </div>
-        </div>
+            </DialogFooter>
+          </DialogContent>
+        </DialogRoot>
       )}
     </Box>
   );
