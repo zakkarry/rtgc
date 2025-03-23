@@ -16,4 +16,5 @@ COPY tsconfig.node.json tsconfig.node.json
 COPY tsconfig.json tsconfig.json
 RUN pnpm build
 EXPOSE 6014
-ENTRYPOINT ["node", "--experimental-transform-types", "server/server.ts"]
+WORKDIR /config
+ENTRYPOINT ["node", "--experimental-transform-types", "/app/server/server.ts"]
