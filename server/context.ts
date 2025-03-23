@@ -1,10 +1,9 @@
 import { type CreateFastifyContextOptions } from "@trpc/server/adapters/fastify";
-import { type FastifyRequest } from "fastify";
 import { verifyJwt } from "./auth.ts";
+import { type FastifyRequest } from "fastify";
 
 async function getUserFromCookie(req: FastifyRequest) {
-  const token = req.cookies.rtgc_token;
-  console.log(req.cookies.rtgc_token);
+  const token = (req as any).cookies.rtgc_token;
   if (!token) return undefined;
   const user = verifyJwt(token);
   return user;
@@ -15,7 +14,7 @@ export async function createContext({ req, res }: CreateFastifyContextOptions) {
   return {
     user,
     setSession(value: string) {
-      res.setCookie("rtgc_token", value, {
+      (res as any).setCookie("rtgc_token", value, {
         httpOnly: true,
         path: "/rtgc/",
         sameSite: "strict",
@@ -24,7 +23,7 @@ export async function createContext({ req, res }: CreateFastifyContextOptions) {
       });
     },
     deleteSession() {
-      res.setCookie("rtgc_token", "foo", {
+      (res as any).setCookie("rtgc_token", "foo", {
         httpOnly: true,
         path: "/rtgc/",
         sameSite: "strict",

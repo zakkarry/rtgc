@@ -105,7 +105,7 @@ export async function scanTorrents(
         size: stats?.size ?? 0,
         type: "unregistered",
         torrentInfo: torrent,
-        lastModified: stats?.mtime ?? new Date(),
+        lastModified: stats?.mtime ? stats.mtime.getTime() : Date.now(),
       });
     } else if (
       torrent.message.trim() ===
@@ -116,7 +116,7 @@ export async function scanTorrents(
         size: stats?.size ?? 0,
         type: "missingFiles",
         torrentInfo: torrent,
-        lastModified: stats?.mtime ?? new Date(),
+        lastModified: stats?.mtime ? stats.mtime.getTime() : Date.now(),
       });
     } else {
       session.push(torrent);
@@ -141,7 +141,7 @@ export async function scanTorrents(
       path,
       size,
       type: "orphaned",
-      lastModified: stats.mtime,
+      lastModified: stats.mtime.getTime(),
     });
   }
 

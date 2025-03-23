@@ -5,11 +5,7 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { useState } from "react";
-import {
-  type ProblemType,
-  type ScanResult,
-  type CleanupResult,
-} from "../server/types";
+import type { ProblemType, CleanupResult } from "../server/types";
 import { Settings } from "./Settings";
 import { trpc } from "./utils/trpc";
 
@@ -50,15 +46,11 @@ export function GarbageCollection() {
   const warningBg = "warning.50";
   const warningColor = "warning.700";
 
-  const { data, refetch } = useSuspenseQuery<ScanResult>(
+  const { data, refetch } = useSuspenseQuery(
     trpc.torrents.scanTorrents.queryOptions()
   );
 
-  const cleanupMutation = useMutation<
-    CleanupResult,
-    Error,
-    { paths: string[] }
-  >(
+  const cleanupMutation = useMutation(
     trpc.torrents.cleanupTorrents.mutationOptions({
       onSuccess: (result: CleanupResult) => {
         console.log("Cleanup successful", result);
@@ -67,7 +59,7 @@ export function GarbageCollection() {
         });
         setSelectedPaths([]);
       },
-      onError: (error: Error) => {
+      onError: (error) => {
         console.error("Cleanup failed", error);
       },
     })

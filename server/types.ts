@@ -39,7 +39,8 @@ export interface ProblemPath {
   size: number;
   type: ProblemType;
   torrentInfo?: TorrentInfo;
-  lastModified: Date;
+  // unix timestamp but in milliseconds
+  lastModified: number;
 }
 
 export interface ScanResult {
