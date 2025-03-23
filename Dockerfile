@@ -8,9 +8,12 @@ VOLUME /config
 ENV CONFIG_DIR=/config
 ENV DOCKER_ENV=true
 ENV PORT=6014
-COPY vite.config.js vite.config.js
+COPY vite.config.ts vite.config.ts
 COPY client client
-RUN pnpm build
 COPY server server
+COPY tsconfig.app.json tsconfig.app.json
+COPY tsconfig.node.json tsconfig.node.json
+COPY tsconfig.json tsconfig.json
+RUN pnpm build
 EXPOSE 6014
 ENTRYPOINT ["node", "--experimental-transform-types", "server/server.ts"]
