@@ -28,6 +28,11 @@ export type DbUser = {
   passwordHash: string;
 };
 
+export interface Settings {
+  rtorrentUrl: string;
+  dataDirs: string[];
+}
+
 export type ProblemType = "unregistered" | "orphaned" | "missingFiles";
 export interface ProblemPath {
   path: string;

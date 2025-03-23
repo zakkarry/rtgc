@@ -1,21 +1,13 @@
-import {
-  Box,
-  Button,
-  Heading,
-  Spinner,
-  Text,
-  Flex,
-  Badge,
-} from "@chakra-ui/react";
-import { useColorMode, useColorModeValue } from "./ui/color-mode";
+import { Badge, Box, Button, Flex, Heading, Text } from "@chakra-ui/react";
 import {
   useMutation,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { type ProblemType, type ProblemPath } from "../server/types";
+import { useState } from "react";
+import { type ProblemType } from "../server/types";
+import { Settings } from "./Settings";
 import { trpc } from "./utils/trpc";
-import { useState, useRef } from "react";
 
 function formatSize(bytes: number): string {
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -48,7 +40,6 @@ export function GarbageCollection() {
   const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Use semantic tokens
   const summaryBg = "bg.muted";
   const successBg = "success.50";
   const successColor = "success.700";
@@ -117,6 +108,7 @@ export function GarbageCollection() {
 
   return (
     <Box>
+      <Settings />
       <Heading size="lg" mb={6}>
         Garbage Collection
       </Heading>
@@ -228,8 +220,6 @@ export function GarbageCollection() {
           </table>
         </Box>
       )}
-
-      {/* Confirmation Dialog */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-surface rounded-lg max-w-md w-full p-6">

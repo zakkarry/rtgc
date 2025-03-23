@@ -1,11 +1,12 @@
 import { JSONFilePreset } from "lowdb/node";
 import { getRandomString } from "./utils.ts";
-import type { Rule, DbUser } from "./types.ts";
+import type { Rule, DbUser, Settings } from "./types.ts";
 
 type Database = {
   user?: DbUser;
   jwtSecret: string;
   rules: Rule[];
+  settings: Settings;
 };
 
 const db = await JSONFilePreset<Database>("db.json", {
@@ -22,6 +23,10 @@ const db = await JSONFilePreset<Database>("db.json", {
       substring: "unregistered torrent",
     },
   ],
+  settings: {
+    rtorrentUrl: "http://localhost:8000",
+    dataDirs: ["/path/to/data1", "/path/to/data2"],
+  },
 });
 
 export function getUser() {
@@ -39,4 +44,13 @@ export function getJwtSecret() {
 
 export function getRules() {
   return db.data.rules;
+}
+
+export function getSettings(): Settings {
+  return db.data.settings;
+}
+
+export async function updateSettings(settings: Settings): Promise<void> {
+  db.data.settings = settings;
+  await db.write();
 }
