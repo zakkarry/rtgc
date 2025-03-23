@@ -134,12 +134,6 @@ export function Settings() {
               </Box>
             )}
           </Box>
-
-          <Box p={3} bg="warning.50" color="warning.700" borderRadius="md">
-            <Text fontSize="sm">
-              Note: Changes to settings require a server restart to take effect.
-            </Text>
-          </Box>
         </DialogBody>
 
         <DialogFooter>
