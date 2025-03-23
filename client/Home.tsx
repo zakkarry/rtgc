@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { trpc } from "./utils/trpc";
 import { GarbageCollection } from "./GarbageCollection";
 import { Boundary } from "./Boundary";
+import { Settings } from "./Settings";
 
 export function Home() {
   const queryClient = useQueryClient();
@@ -40,6 +41,7 @@ export function Home() {
         </Flex>
       </Flex>
       <Box p={4}>
+        <Settings />
         <Boundary>
           <GarbageCollection />
         </Boundary>

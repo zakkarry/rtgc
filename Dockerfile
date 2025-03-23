@@ -7,6 +7,7 @@ RUN pnpm install --frozen-lockfile
 VOLUME /config
 ENV CONFIG_DIR=/config
 ENV DOCKER_ENV=true
+ENV NODE_ENV=production
 ENV PORT=6014
 COPY vite.config.ts vite.config.ts
 COPY client client

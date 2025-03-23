@@ -88,7 +88,7 @@ export async function scanTorrents(
   rtorrent: RTorrent,
   dataDirs: string[]
 ): Promise<ScanResult> {
-  if (process.env.NODE_ENV === "development") {
+  if (process.env.NODE_ENV !== "production") {
     return {
       problemPaths: [
         {

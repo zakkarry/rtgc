@@ -83,9 +83,9 @@ export function GarbageCollection() {
   );
 
   const handleToggleSelect = (path: string) => {
-    setSelectedPaths((prev) =>
-      prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path]
-    );
+    const selected = new Set(selectedPaths);
+    selected.has(path) ? selected.delete(path) : selected.add(path);
+    setSelectedPaths(Array.from(selected));
   };
 
   const handleSelectAll = () => {
@@ -129,7 +129,6 @@ export function GarbageCollection() {
 
   return (
     <Box>
-      <Settings />
       <Heading size="lg" mb={6}>
         Garbage Collection
       </Heading>
@@ -201,11 +200,16 @@ export function GarbageCollection() {
             </Table.Header>
             <Table.Body>
               {data.problemPaths.map((problem, index) => (
-                <Table.Row key={index}>
+                <Table.Row
+                  key={index}
+                  onClick={() => handleToggleSelect(problem.path)}
+                  cursor="pointer"
+                  _hover={{ bg: "bg.subtle" }}
+                >
                   <Table.Cell>
                     <Checkbox.Root
                       checked={selectedPaths.includes(problem.path)}
-                      onCheckedChange={() => handleToggleSelect(problem.path)}
+                      pointerEvents="none"
                     >
                       <Checkbox.Control />
                     </Checkbox.Root>
@@ -224,7 +228,7 @@ export function GarbageCollection() {
                   </Table.Cell>
                   <Table.Cell>{formatSize(problem.size)}</Table.Cell>
                   <Table.Cell>
-                    {new Date(problem.lastModified).toDateString()}
+                    {new Date(problem.lastModified).toLocaleDateString("sv")}
                   </Table.Cell>
                 </Table.Row>
               ))}
