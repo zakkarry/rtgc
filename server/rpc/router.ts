@@ -11,6 +11,7 @@ export const appRouter = router({
   getRules: protectedProcedure.query(getRules),
   scanTorrents: protectedProcedure.query(async () => {
     try {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       return await scanTorrents(rtorrent, dataDirs);
     } catch (error) {
       console.error("Error scanning torrents:", error);

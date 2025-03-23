@@ -9,20 +9,24 @@ A web-based utility for managing and cleaning up rTorrent torrents and data.
 - Handle torrents with missing files
 - Detect and manage hardlinked files
 
-## Setup
+## Run locally
 
 1. Install dependencies:
 
    ```
-   npm install
+   pnpm i
    ```
 
 2. Configure your environment (see Configuration section)
 
 3. Start the server:
    ```
-   npm start
+   caddy run --config Caddyfile & pnpm dev & node --watch --experimental-transform-types server/server.ts
    ```
+
+## Production
+
+Use docker.
 
 ## Configuration
 
@@ -30,25 +34,3 @@ The application requires the following configuration:
 
 - rTorrent RPC URL (e.g., `http://username:password@localhost:5000/RPC2`)
 - Data directories where torrent files are stored
-
-## Development
-
-To run the application in development mode with auto-restart:
-
-```
-npm run dev
-```
-
-## API
-
-The application provides a web API for interacting with rTorrent and managing torrents:
-
-- List all torrents
-- Get torrent details
-- Remove unregistered torrents
-- Clean up orphaned data
-- Find and manage hardlinked files
-
-## License
-
-MIT

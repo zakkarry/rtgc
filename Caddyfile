@@ -1,4 +1,4 @@
 localhost {
-    reverse_proxy /rtgc/trpc/* http://localhost:3000
+    reverse_proxy /rtgc/trpc/* http://localhost:6014
     reverse_proxy /rtgc/* http://localhost:5173
 }

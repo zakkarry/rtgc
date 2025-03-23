@@ -1,6 +1,6 @@
-import { Component, ErrorInfo } from "react";
+import { Component, ErrorInfo, Suspense } from "react";
 
-export default class ErrorBoundary extends Component<
+export class Boundary extends Component<
   { children: React.ReactNode },
   { error: Error | undefined }
 > {
@@ -29,6 +29,10 @@ export default class ErrorBoundary extends Component<
         </div>
       );
     }
-    return this.props.children;
+    return (
+      <Suspense fallback={<div>Loading...</div>}>
+        {this.props.children}
+      </Suspense>
+    );
   }
 }

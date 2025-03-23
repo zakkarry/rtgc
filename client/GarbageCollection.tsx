@@ -7,12 +7,16 @@ import {
   Flex,
   Badge,
 } from "@chakra-ui/react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useColorMode, useColorModeValue } from "./ui/color-mode";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { type ProblemType, type ProblemPath } from "../server/types";
 import { trpc } from "./utils/trpc";
 import { useState, useRef } from "react";
 
-// Helper function to format file sizes
 function formatSize(bytes: number): string {
   const units = ["B", "KB", "MB", "GB", "TB"];
   let size = bytes;
@@ -26,15 +30,14 @@ function formatSize(bytes: number): string {
   return `${size.toFixed(2)} ${units[unitIndex]}`;
 }
 
-// Helper function to get badge color based on problem type
 function getProblemBadgeProps(type: ProblemType) {
   switch (type) {
     case "unregistered":
-      return { colorScheme: "yellow", children: "Unregistered" };
+      return { colorScheme: "warning", children: "Unregistered" };
     case "orphaned":
-      return { colorScheme: "red", children: "Orphaned" };
+      return { colorScheme: "danger", children: "Orphaned" };
     case "missingFiles":
-      return { colorScheme: "orange", children: "Missing Files" };
+      return { colorScheme: "warning", children: "Missing Files" };
     default:
       return { colorScheme: "gray", children: type };
   }
@@ -44,17 +47,22 @@ export function GarbageCollection() {
   const queryClient = useQueryClient();
   const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
+  const { colorMode } = useColorMode();
 
-  // Use TanStack Query with TRPC
-  const { data, isLoading, isError, error, refetch } = useQuery(
+  // Use semantic tokens
+  const summaryBg = "bg.muted";
+  const successBg = "success.50";
+  const successColor = "success.700";
+  const warningBg = "warning.50";
+  const warningColor = "warning.700";
+
+  const { data, isLoading, refetch } = useSuspenseQuery(
     trpc.scanTorrents.queryOptions()
   );
 
-  // Mutation for cleanup
   const cleanupMutation = useMutation(
     trpc.cleanupTorrents.mutationOptions({
       onSuccess: (result) => {
-        // Show success message
         console.log("Cleanup successful", result);
         queryClient.invalidateQueries({
           queryKey: trpc.scanTorrents.queryKey(),
@@ -62,7 +70,6 @@ export function GarbageCollection() {
         setSelectedPaths([]);
       },
       onError: (error) => {
-        // Show error message
         console.error("Cleanup failed", error);
       },
     })
@@ -93,50 +100,23 @@ export function GarbageCollection() {
     cleanupMutation.mutate({ paths: selectedPaths });
   };
 
-  if (isLoading || cleanupMutation.isPending) {
-    return (
-      <Flex justify="center" align="center" height="300px" direction="column">
-        <Spinner size="xl" mb={4} />
-        <Text>
-          {cleanupMutation.isPending
-            ? "Cleaning up selected paths..."
-            : "Scanning torrents and filesystem..."}
-        </Text>
-      </Flex>
-    );
-  }
-
-  if (isError) {
-    return (
-      <Box p={4} bg="red.50" borderRadius="md">
-        <Heading size="md" color="red.500" mb={2}>
-          Error
-        </Heading>
-        <Text>{error?.message || "An unknown error occurred"}</Text>
-        <Button mt={4} onClick={() => refetch()} colorScheme="red">
-          Retry
-        </Button>
-      </Box>
-    );
-  }
-
-  if (!data) {
-    return (
-      <Box p={4} bg="yellow.50" borderRadius="md">
-        <Heading size="md" color="yellow.500" mb={2}>
-          No Data
-        </Heading>
-        <Text>No data was returned from the server.</Text>
-        <Button mt={4} onClick={() => refetch()} colorScheme="yellow">
-          Retry
-        </Button>
-      </Box>
-    );
-  }
-
   const selectedSize = data.problemPaths
     .filter((p) => selectedPaths.includes(p.path))
     .reduce((sum, p) => sum + p.size, 0);
+
+  if (!data) {
+    return (
+      <Box p={4} bg={warningBg} color={warningColor} borderRadius="md">
+        <Heading size="md" mb={2}>
+          No Data
+        </Heading>
+        <Text>No data was returned from the server.</Text>
+        <Button mt={4} onClick={() => refetch()} colorScheme="warning">
+          Retry
+        </Button>
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -145,18 +125,18 @@ export function GarbageCollection() {
       </Heading>
 
       {/* Summary Statistics */}
-      <Flex mb={6} p={4} bg="gray.50" borderRadius="md" gap={8}>
+      <Flex mb={6} p={4} bg={summaryBg} borderRadius="md" gap={8}>
         <Box>
           <Text fontWeight="bold">Problem Paths</Text>
           <Text fontSize="2xl">{data.problemPaths.length}</Text>
-          <Text fontSize="sm" color="gray.600">
+          <Text fontSize="sm" opacity="0.8">
             {data.percentageOfTotalPaths.toFixed(2)}% of total paths
           </Text>
         </Box>
         <Box>
           <Text fontWeight="bold">Total Size</Text>
           <Text fontSize="2xl">{formatSize(data.totalSize)}</Text>
-          <Text fontSize="sm" color="gray.600">
+          <Text fontSize="sm" opacity="0.8">
             {data.percentageOfTotalSize.toFixed(2)}% of total size
           </Text>
         </Box>
@@ -164,7 +144,7 @@ export function GarbageCollection() {
           <Box>
             <Text fontWeight="bold">Selected</Text>
             <Text fontSize="2xl">{selectedPaths.length} paths</Text>
-            <Text fontSize="sm" color="gray.600">
+            <Text fontSize="sm" opacity="0.8">
               {formatSize(selectedSize)}
             </Text>
           </Box>
@@ -172,7 +152,7 @@ export function GarbageCollection() {
       </Flex>
 
       <Flex justify="space-between" mb={4}>
-        <Button onClick={() => refetch()} colorScheme="blue">
+        <Button onClick={() => refetch()} colorScheme="primary">
           Refresh
         </Button>
         <Flex gap={2}>
@@ -187,7 +167,7 @@ export function GarbageCollection() {
           </Button>
           <Button
             onClick={handleCleanup}
-            colorScheme="red"
+            colorScheme="danger"
             disabled={selectedPaths.length === 0}
           >
             Clean Up Selected ({selectedPaths.length})
@@ -197,34 +177,66 @@ export function GarbageCollection() {
 
       {/* Problem Paths Table */}
       {data.problemPaths.length === 0 ? (
-        <Box p={4} bg="green.50" borderRadius="md">
+        <Box p={4} bg={successBg} color={successColor} borderRadius="md">
           <Text>
             No problems found! Your torrents and filesystem are clean.
           </Text>
         </Box>
       ) : (
         <Box overflowX="auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table
+            className={`min-w-full divide-y ${
+              colorMode === "dark" ? "divide-gray-600" : "divide-gray-200"
+            }`}
+          >
+            <thead
+              className={colorMode === "dark" ? "bg-gray-700" : "bg-gray-50"}
+            >
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium ${
+                    colorMode === "dark" ? "text-gray-300" : "text-gray-500"
+                  } uppercase tracking-wider`}
+                >
                   Select
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium ${
+                    colorMode === "dark" ? "text-gray-300" : "text-gray-500"
+                  } uppercase tracking-wider`}
+                >
                   Type
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium ${
+                    colorMode === "dark" ? "text-gray-300" : "text-gray-500"
+                  } uppercase tracking-wider`}
+                >
                   Path
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium ${
+                    colorMode === "dark" ? "text-gray-300" : "text-gray-500"
+                  } uppercase tracking-wider`}
+                >
                   Size
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium ${
+                    colorMode === "dark" ? "text-gray-300" : "text-gray-500"
+                  } uppercase tracking-wider`}
+                >
                   Last Modified
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody
+              className={`${
+                colorMode === "dark" ? "bg-gray-800" : "bg-white"
+              } divide-y ${
+                colorMode === "dark" ? "divide-gray-600" : "divide-gray-200"
+              }`}
+            >
               {data.problemPaths.map((problem, index) => (
                 <tr key={index}>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -260,7 +272,11 @@ export function GarbageCollection() {
       {/* Confirmation Dialog */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
+          <div
+            className={`${
+              colorMode === "dark" ? "bg-gray-800" : "bg-white"
+            } rounded-lg max-w-md w-full p-6`}
+          >
             <h3 className="text-lg font-medium mb-4">Confirm Cleanup</h3>
             <p className="mb-4">
               Are you sure you want to delete {selectedPaths.length} paths (
@@ -268,7 +284,7 @@ export function GarbageCollection() {
             </p>
             <div className="flex justify-end gap-2">
               <Button onClick={() => setShowConfirm(false)}>Cancel</Button>
-              <Button colorScheme="red" onClick={confirmCleanup}>
+              <Button colorScheme="danger" onClick={confirmCleanup}>
                 Delete
               </Button>
             </div>
