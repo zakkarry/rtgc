@@ -47,7 +47,6 @@ export function GarbageCollection() {
   const queryClient = useQueryClient();
   const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
-  const { colorMode } = useColorMode();
 
   // Use semantic tokens
   const summaryBg = "bg.muted";
@@ -56,9 +55,7 @@ export function GarbageCollection() {
   const warningBg = "warning.50";
   const warningColor = "warning.700";
 
-  const { data, isLoading, refetch } = useSuspenseQuery(
-    trpc.scanTorrents.queryOptions()
-  );
+  const { data, refetch } = useSuspenseQuery(trpc.scanTorrents.queryOptions());
 
   const cleanupMutation = useMutation(
     trpc.cleanupTorrents.mutationOptions({
@@ -123,8 +120,6 @@ export function GarbageCollection() {
       <Heading size="lg" mb={6}>
         Garbage Collection
       </Heading>
-
-      {/* Summary Statistics */}
       <Flex mb={6} p={4} bg={summaryBg} borderRadius="md" gap={8}>
         <Box>
           <Text fontWeight="bold">Problem Paths</Text>
@@ -150,7 +145,6 @@ export function GarbageCollection() {
           </Box>
         )}
       </Flex>
-
       <Flex justify="space-between" mb={4}>
         <Button onClick={() => refetch()} colorScheme="primary">
           Refresh
@@ -174,8 +168,6 @@ export function GarbageCollection() {
           </Button>
         </Flex>
       </Flex>
-
-      {/* Problem Paths Table */}
       {data.problemPaths.length === 0 ? (
         <Box p={4} bg={successBg} color={successColor} borderRadius="md">
           <Text>
@@ -184,59 +176,27 @@ export function GarbageCollection() {
         </Box>
       ) : (
         <Box overflowX="auto">
-          <table
-            className={`min-w-full divide-y ${
-              colorMode === "dark" ? "divide-gray-600" : "divide-gray-200"
-            }`}
-          >
-            <thead
-              className={colorMode === "dark" ? "bg-gray-700" : "bg-gray-50"}
-            >
+          <table className="min-w-full divide-y divide-border-subtle">
+            <thead className="bg-subtle">
               <tr>
-                <th
-                  className={`px-6 py-3 text-left text-xs font-medium ${
-                    colorMode === "dark" ? "text-gray-300" : "text-gray-500"
-                  } uppercase tracking-wider`}
-                >
+                <th className="px-6 py-3 text-left text-xs font-medium text-subtle uppercase tracking-wider">
                   Select
                 </th>
-                <th
-                  className={`px-6 py-3 text-left text-xs font-medium ${
-                    colorMode === "dark" ? "text-gray-300" : "text-gray-500"
-                  } uppercase tracking-wider`}
-                >
+                <th className="px-6 py-3 text-left text-xs font-medium text-subtle uppercase tracking-wider">
                   Type
                 </th>
-                <th
-                  className={`px-6 py-3 text-left text-xs font-medium ${
-                    colorMode === "dark" ? "text-gray-300" : "text-gray-500"
-                  } uppercase tracking-wider`}
-                >
+                <th className="px-6 py-3 text-left text-xs font-medium text-subtle uppercase tracking-wider">
                   Path
                 </th>
-                <th
-                  className={`px-6 py-3 text-left text-xs font-medium ${
-                    colorMode === "dark" ? "text-gray-300" : "text-gray-500"
-                  } uppercase tracking-wider`}
-                >
+                <th className="px-6 py-3 text-left text-xs font-medium text-subtle uppercase tracking-wider">
                   Size
                 </th>
-                <th
-                  className={`px-6 py-3 text-left text-xs font-medium ${
-                    colorMode === "dark" ? "text-gray-300" : "text-gray-500"
-                  } uppercase tracking-wider`}
-                >
+                <th className="px-6 py-3 text-left text-xs font-medium text-subtle uppercase tracking-wider">
                   Last Modified
                 </th>
               </tr>
             </thead>
-            <tbody
-              className={`${
-                colorMode === "dark" ? "bg-gray-800" : "bg-white"
-              } divide-y ${
-                colorMode === "dark" ? "divide-gray-600" : "divide-gray-200"
-              }`}
-            >
+            <tbody className="bg-surface divide-y divide-border-subtle">
               {data.problemPaths.map((problem, index) => (
                 <tr key={index}>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -272,11 +232,7 @@ export function GarbageCollection() {
       {/* Confirmation Dialog */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div
-            className={`${
-              colorMode === "dark" ? "bg-gray-800" : "bg-white"
-            } rounded-lg max-w-md w-full p-6`}
-          >
+          <div className="bg-surface rounded-lg max-w-md w-full p-6">
             <h3 className="text-lg font-medium mb-4">Confirm Cleanup</h3>
             <p className="mb-4">
               Are you sure you want to delete {selectedPaths.length} paths (
