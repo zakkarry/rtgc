@@ -224,7 +224,7 @@ export function GarbageCollection() {
                   </Table.Cell>
                   <Table.Cell>{formatSize(problem.size)}</Table.Cell>
                   <Table.Cell>
-                    {new Date(problem.lastModified).toLocaleString()}
+                    {new Date(problem.lastModified).toDateString()}
                   </Table.Cell>
                 </Table.Row>
               ))}
@@ -233,7 +233,10 @@ export function GarbageCollection() {
         </Box>
       )}
       {showConfirm && (
-        <DialogRoot isOpen={showConfirm} onClose={() => setShowConfirm(false)}>
+        <DialogRoot
+          open={showConfirm}
+          onOpenChange={({ open }) => setShowConfirm(open)}
+        >
           <DialogBackdrop />
           <DialogContent>
             <DialogHeader>Confirm Cleanup</DialogHeader>

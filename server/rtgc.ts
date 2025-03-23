@@ -88,6 +88,29 @@ export async function scanTorrents(
   rtorrent: RTorrent,
   dataDirs: string[]
 ): Promise<ScanResult> {
+  if (process.env.NODE_ENV === "development") {
+    return {
+      problemPaths: [
+        {
+          path: "/downloads/test",
+          size: 100,
+          type: "orphaned",
+          lastModified: Date.now(),
+        },
+        {
+          path: "/downloads/test2",
+          size: 200,
+          type: "orphaned",
+          lastModified: Date.now(),
+        },
+      ],
+      totalSize: 0,
+      totalPaths: 0,
+      percentageOfTotalPaths: 0,
+      percentageOfTotalSize: 0,
+    };
+  }
+
   const downloadList = await rtorrent.downloadList();
   const torrents = await rtorrent.getTorrentsBatched(downloadList);
 
