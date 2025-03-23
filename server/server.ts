@@ -8,19 +8,12 @@ import Fastify from "fastify";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createContext } from "./context.ts";
-import { RTorrent } from "./rtorrent.ts";
 import { type AppRouter } from "./rpc/router.ts";
 import { appRouter } from "./rpc/router.ts";
-import { getSettings } from "./db.ts";
 
 const BASE_URL = "/rtgc";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// Load settings from database
-const settings = getSettings();
-export const rtorrent = new RTorrent(settings.rtorrentUrl);
-export const dataDirs = settings.dataDirs;
 
 const fastify = Fastify({ logger: true });
 fastify.register(fastifyCookie);

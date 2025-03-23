@@ -3,8 +3,8 @@ import { z } from "zod";
 import { getRules, getSettings, updateSettings } from "../db.ts";
 import { auth } from "./auth.ts";
 import { scanTorrents, cleanupTorrents } from "../rtgc.ts";
-import { rtorrent, dataDirs } from "../server.ts";
 import { router, protectedProcedure } from "../trpc.ts";
+import { RTorrent } from "../rtorrent.ts";
 
 // Settings schema
 const settingsSchema = z.object({
@@ -30,7 +30,8 @@ export const appRouter = router({
     }),
   scanTorrents: protectedProcedure.query(async () => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const { rtorrentUrl, dataDirs } = getSettings();
+      const rtorrent = new RTorrent(rtorrentUrl);
       return await scanTorrents(rtorrent, dataDirs);
     } catch (error) {
       console.error("Error scanning torrents:", error);
