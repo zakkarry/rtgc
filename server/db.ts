@@ -9,7 +9,7 @@ type Database = {
   settings: Settings;
 };
 
-const db = await JSONFilePreset<Database>("db.json", {
+const defaults: Database = {
   jwtSecret: getRandomString(),
   rules: [
     {
@@ -27,7 +27,12 @@ const db = await JSONFilePreset<Database>("db.json", {
     rtorrentUrl: "http://localhost:8000",
     dataDirs: ["/path/to/data1", "/path/to/data2"],
   },
-});
+};
+
+const db = await JSONFilePreset<Database>("db.json", defaults);
+
+// simple db migration
+await db.update((existingData) => ({ ...defaults, ...existingData }));
 
 export function getUser() {
   return db.data.user;
