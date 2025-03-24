@@ -121,11 +121,12 @@ export async function scanTorrents(
   for (const [i, torrent] of torrents.entries()) {
     printProgress(i, torrents.length);
     const stats = await stat(torrent.basePath).catch(() => null);
+    const size = await du(torrent.basePath);
 
     if (isUnregistered(torrent)) {
       problemPaths.push({
         path: torrent.basePath,
-        size: stats?.size ?? 0,
+        size,
         type: "unregistered",
         torrentInfo: torrent,
         lastModified: stats?.mtime ? stats.mtime.getTime() : Date.now(),
@@ -136,7 +137,7 @@ export async function scanTorrents(
     ) {
       problemPaths.push({
         path: torrent.basePath,
-        size: stats?.size ?? 0,
+        size,
         type: "missingFiles",
         torrentInfo: torrent,
         lastModified: stats?.mtime ? stats.mtime.getTime() : Date.now(),
