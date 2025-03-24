@@ -5,6 +5,7 @@ import { trpc } from "./utils/trpc";
 import { GarbageCollection } from "./GarbageCollection";
 import { Boundary } from "./Boundary";
 import { Settings } from "./Settings";
+import { Rules } from "./Rules";
 
 export function Home() {
   const queryClient = useQueryClient();
@@ -34,6 +35,8 @@ export function Home() {
           </Text>
         </Flex>
         <Flex gap={2} align="center">
+          <Settings />
+          <Rules />
           <ColorModeButton />
           <Button colorScheme="danger" onClick={() => logout()}>
             Log Out
@@ -41,7 +44,6 @@ export function Home() {
         </Flex>
       </Flex>
       <Box p={4}>
-        <Settings />
         <Boundary>
           <GarbageCollection />
         </Boundary>

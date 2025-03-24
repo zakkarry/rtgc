@@ -264,6 +264,8 @@ export function isUnregistered(torrent: TorrentInfo): boolean {
     "dupe",
     "see: ",
     "has been deleted",
+    "problem with file: ",
+    "specifically banned",
   ].map((e) => e.toLowerCase()); // just to be safe
 
   return keywords.some((keyword) => message.includes(keyword));

@@ -8,20 +8,11 @@ export interface TorrentInfo {
   message: string;
 }
 
-export type SubstringRule = {
+export type Rule = {
   matchType: "substring";
   substring: string;
+  type: ProblemType;
 };
-
-export type RegexRule = {
-  matchType: "regex";
-  regex: string;
-};
-
-export type BaseRule = SubstringRule | RegexRule;
-export type KeepRule = BaseRule & { ruleType: "keep" };
-export type DropRule = BaseRule & { ruleType: "drop" };
-export type Rule = KeepRule | DropRule;
 
 export type DbUser = {
   username: string;
@@ -34,10 +25,12 @@ export interface Settings {
 }
 
 export type ProblemType =
+  | "healthy"
   | "unregistered"
   | "orphaned"
   | "missingFiles"
   | "unknown";
+
 export interface ProblemPath {
   path: string;
   size: number;

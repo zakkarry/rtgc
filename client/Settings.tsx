@@ -74,7 +74,7 @@ export function Settings() {
   return (
     <DialogRoot open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm" colorScheme="gray" mb={4}>
+        <Button size="sm" colorScheme="gray">
           Settings
         </Button>
       </DialogTrigger>

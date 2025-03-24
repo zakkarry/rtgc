@@ -78,10 +78,17 @@ export function GarbageCollection() {
 
   const handleSelectAll = () => {
     if (!data) return;
-    if (selectedPaths.length === data.problemPaths.length) {
-      setSelectedPaths([]);
+    if (selectedPaths.length === filteredProblemPaths.length) {
+      // Deselect only the filtered paths
+      const filteredPathSet = new Set(filteredProblemPaths.map((p) => p.path));
+      setSelectedPaths(
+        selectedPaths.filter((path) => !filteredPathSet.has(path))
+      );
     } else {
-      setSelectedPaths(data.problemPaths.map((p) => p.path));
+      // Select all filtered paths while keeping previously selected paths that aren't in the current filter
+      const newSelectedPaths = new Set(selectedPaths);
+      filteredProblemPaths.forEach((p) => newSelectedPaths.add(p.path));
+      setSelectedPaths(Array.from(newSelectedPaths));
     }
   };
 
@@ -178,9 +185,10 @@ export function GarbageCollection() {
           <Button
             onClick={handleSelectAll}
             colorScheme="gray"
-            disabled={data.problemPaths.length === 0}
+            disabled={filteredProblemPaths.length === 0}
           >
-            {selectedPaths.length === data.problemPaths.length
+            {selectedPaths.length === filteredProblemPaths.length &&
+            filteredProblemPaths.every((p) => selectedPaths.includes(p.path))
               ? "Deselect All"
               : "Select All"}
           </Button>

@@ -1,6 +1,6 @@
 import { JSONFilePreset } from "lowdb/node";
 import { getRandomString } from "./utils.ts";
-import type { Rule, DbUser, Settings } from "./types.ts";
+import type { DbUser, Settings, Rule } from "./types.ts";
 
 type Database = {
   user?: DbUser;
@@ -13,14 +13,69 @@ const defaults: Database = {
   jwtSecret: getRandomString(),
   rules: [
     {
-      ruleType: "keep",
       matchType: "substring",
-      substring: "unable to parse bencoded data",
+      substring: "unregistered",
+      type: "unregistered",
     },
     {
-      ruleType: "drop",
       matchType: "substring",
-      substring: "unregistered torrent",
+      substring: "not registered",
+      type: "unregistered",
+    },
+    {
+      matchType: "substring",
+      substring: "this torrent does not exist",
+      type: "unregistered",
+    },
+    {
+      matchType: "substring",
+      substring: "trumped",
+      type: "unregistered",
+    },
+    {
+      matchType: "substring",
+      substring: "infohash not found",
+      type: "unregistered",
+    },
+    {
+      matchType: "substring",
+      substring: "complete season uploaded",
+      type: "unregistered",
+    },
+    {
+      matchType: "substring",
+      substring: "torrent not found",
+      type: "unregistered",
+    },
+    {
+      matchType: "substring",
+      substring: "nuked",
+      type: "unregistered",
+    },
+    {
+      matchType: "substring",
+      substring: "dupe",
+      type: "unregistered",
+    },
+    {
+      matchType: "substring",
+      substring: "see: ",
+      type: "unregistered",
+    },
+    {
+      matchType: "substring",
+      substring: "has been deleted",
+      type: "unregistered",
+    },
+    {
+      matchType: "substring",
+      substring: "problem with file: ",
+      type: "unregistered",
+    },
+    {
+      matchType: "substring",
+      substring: "specifically banned",
+      type: "unregistered",
     },
   ],
   settings: {
@@ -32,7 +87,15 @@ const defaults: Database = {
 const db = await JSONFilePreset<Database>("db.json", defaults);
 
 // simple db migration
-await db.update((existingData) => ({ ...defaults, ...existingData }));
+await db.update((existingData) => {
+  for (const key in defaults) {
+    if (!Object.hasOwn(existingData, key)) {
+      // @ts-ignore
+      existingData[key] = defaults[key];
+    }
+  }
+  return existingData;
+});
 
 export function getUser() {
   return db.data.user;
@@ -49,6 +112,11 @@ export function getJwtSecret() {
 
 export function getRules() {
   return db.data.rules;
+}
+
+export async function updateRules(rules: Rule[]): Promise<void> {
+  db.data.rules = rules;
+  await db.write();
 }
 
 export function getSettings(): Settings {
