@@ -144,6 +144,16 @@ export async function scanTorrents(
       });
     } else {
       session.push(torrent);
+
+      if (torrent.message) {
+        problemPaths.push({
+          path: torrent.basePath,
+          size,
+          type: "unknown",
+          torrentInfo: torrent,
+          lastModified: stats?.mtime ? stats.mtime.getTime() : Date.now(),
+        });
+      }
     }
   }
 

@@ -33,7 +33,11 @@ export interface Settings {
   dataDirs: string[];
 }
 
-export type ProblemType = "unregistered" | "orphaned" | "missingFiles";
+export type ProblemType =
+  | "unregistered"
+  | "orphaned"
+  | "missingFiles"
+  | "unknown";
 export interface ProblemPath {
   path: string;
   size: number;

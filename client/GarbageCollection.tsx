@@ -39,19 +39,6 @@ function formatSize(bytes: number): string {
   return `${size.toFixed(2)} ${units[unitIndex]}`;
 }
 
-function getProblemBadgeProps(type: ProblemType) {
-  switch (type) {
-    case "unregistered":
-      return { colorScheme: "warning", children: "Unregistered" };
-    case "orphaned":
-      return { colorScheme: "danger", children: "Orphaned" };
-    case "missingFiles":
-      return { colorScheme: "warning", children: "Missing Files" };
-    default:
-      return { colorScheme: "gray", children: type };
-  }
-}
-
 export function GarbageCollection() {
   const queryClient = useQueryClient();
   const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
@@ -215,7 +202,7 @@ export function GarbageCollection() {
                     </Checkbox.Root>
                   </Table.Cell>
                   <Table.Cell>
-                    <Badge {...getProblemBadgeProps(problem.type)} />
+                    <Badge>{problem.type}</Badge>
                   </Table.Cell>
                   <Table.Cell
                     maxW="xs"
