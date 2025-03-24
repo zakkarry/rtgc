@@ -145,7 +145,7 @@ export async function scanTorrents(
     } else {
       session.push(torrent);
 
-      if (torrent.message) {
+      if (!torrent.message.includes("Timed out")) {
         problemPaths.push({
           path: torrent.basePath,
           size,
