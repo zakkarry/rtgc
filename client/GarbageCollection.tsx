@@ -181,6 +181,7 @@ export function GarbageCollection() {
                 <Table.ColumnHeader>Select</Table.ColumnHeader>
                 <Table.ColumnHeader>Type</Table.ColumnHeader>
                 <Table.ColumnHeader>Path</Table.ColumnHeader>
+                <Table.ColumnHeader>Message</Table.ColumnHeader>
                 <Table.ColumnHeader>Size</Table.ColumnHeader>
                 <Table.ColumnHeader>Last Modified</Table.ColumnHeader>
               </Table.Row>
@@ -212,6 +213,9 @@ export function GarbageCollection() {
                     title={problem.path}
                   >
                     {problem.path}
+                  </Table.Cell>
+                  <Table.Cell>
+                    {problem.torrentInfo?.message ?? "--"}
                   </Table.Cell>
                   <Table.Cell>{formatSize(problem.size)}</Table.Cell>
                   <Table.Cell>
