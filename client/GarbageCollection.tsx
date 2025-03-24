@@ -2,11 +2,12 @@ import {
   Badge,
   Box,
   Button,
+  Checkbox,
   Flex,
   Heading,
-  Text,
+  NativeSelect,
   Table,
-  Checkbox,
+  Text,
 } from "@chakra-ui/react";
 import {
   useMutation,
@@ -14,17 +15,16 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { useState } from "react";
-import type { ProblemType, CleanupResult } from "../server/types";
-import { Settings } from "./Settings";
-import { trpc } from "./utils/trpc";
+import type { CleanupResult, ProblemType } from "../server/types";
 import {
-  DialogRoot,
-  DialogContent,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
   DialogBackdrop,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogRoot,
 } from "./ui/dialog";
+import { trpc } from "./utils/trpc";
 
 function formatSize(bytes: number): string {
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -43,6 +43,7 @@ export function GarbageCollection() {
   const queryClient = useQueryClient();
   const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<ProblemType | "all">("all");
 
   const summaryBg = "bg.muted";
   const successBg = "success.50";
@@ -100,6 +101,12 @@ export function GarbageCollection() {
         .reduce((sum, p) => sum + p.size, 0)
     : 0;
 
+  const filteredProblemPaths =
+    data?.problemPaths.filter((p) => {
+      if (typeFilter === "all") return true;
+      return p.type === typeFilter;
+    }) || [];
+
   if (!data) {
     return (
       <Box p={4} bg={warningBg} color={warningColor} borderRadius="md">
@@ -145,9 +152,28 @@ export function GarbageCollection() {
         )}
       </Flex>
       <Flex justify="space-between" mb={4}>
-        <Button onClick={() => refetch()} colorScheme="primary">
-          Refresh
-        </Button>
+        <Box>
+          <Flex gap={2}>
+            <Button onClick={() => refetch()} colorScheme="primary">
+              Refresh
+            </Button>
+            <NativeSelect.Root>
+              <NativeSelect.Field
+                value={typeFilter}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setTypeFilter(e.target.value as ProblemType | "all")
+                }
+              >
+                <option value="all">All Types</option>
+                <option value="unregistered">Unregistered</option>
+                <option value="orphaned">Orphaned</option>
+                <option value="missingFiles">Missing Files</option>
+                <option value="unknown">Unknown</option>
+              </NativeSelect.Field>
+              <NativeSelect.Indicator />
+            </NativeSelect.Root>
+          </Flex>
+        </Box>
         <Flex gap={2}>
           <Button
             onClick={handleSelectAll}
@@ -167,10 +193,12 @@ export function GarbageCollection() {
           </Button>
         </Flex>
       </Flex>
-      {data.problemPaths.length === 0 ? (
+      {filteredProblemPaths.length === 0 ? (
         <Box p={4} bg={successBg} color={successColor} borderRadius="md">
           <Text>
-            No problems found! Your torrents and filesystem are clean.
+            {data.problemPaths.length === 0
+              ? "No problems found! Your torrents and filesystem are clean."
+              : "No problems match the selected filter."}
           </Text>
         </Box>
       ) : (
@@ -187,7 +215,7 @@ export function GarbageCollection() {
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {data.problemPaths.map((problem, index) => (
+              {filteredProblemPaths.map((problem, index) => (
                 <Table.Row
                   key={index}
                   onClick={() => handleToggleSelect(problem.path)}

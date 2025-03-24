@@ -120,8 +120,10 @@ export async function scanTorrents(
   // Scan torrents first
   for (const [i, torrent] of torrents.entries()) {
     printProgress(i, torrents.length);
-    const stats = await stat(torrent.basePath).catch(() => null);
-    const size = await du(torrent.basePath);
+    const [stats, size] = await Promise.all([
+      stat(torrent.basePath).catch(() => null),
+      du(torrent.basePath),
+    ]);
 
     if (isUnregistered(torrent)) {
       problemPaths.push({
