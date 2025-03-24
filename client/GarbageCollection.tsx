@@ -215,7 +215,7 @@ export function GarbageCollection() {
                     {problem.path}
                   </Table.Cell>
                   <Table.Cell>
-                    {problem.torrentInfo?.message ?? "--"}
+                    {problem.torrentInfo?.message || "--"}
                   </Table.Cell>
                   <Table.Cell>{formatSize(problem.size)}</Table.Cell>
                   <Table.Cell>
