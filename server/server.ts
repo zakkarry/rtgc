@@ -29,6 +29,7 @@ fastify.register(
       trpcOptions: {
         router: appRouter,
         createContext,
+        allowMethodOverride: true,
       } satisfies FastifyTRPCPluginOptions<AppRouter>["trpcOptions"],
     });
 
