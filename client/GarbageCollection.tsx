@@ -5,7 +5,6 @@ import {
   Checkbox,
   Flex,
   Heading,
-  NativeSelect,
   Table,
   Text,
 } from "@chakra-ui/react";
@@ -45,7 +44,7 @@ export function GarbageCollection() {
   const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState<Set<ProblemType>>(
-    new Set()
+    new Set(["missingFiles", "orphaned", "timeout", "unknown", "unregistered"])
   );
 
   const summaryBg = "bg.muted";
@@ -62,7 +61,10 @@ export function GarbageCollection() {
     trpc.torrents.classifyTorrents.queryOptions(scanResults.torrentPaths)
   );
 
-  const allResults = [...classifyResults, ...scanResults.orphanedPaths];
+  const allResults = useMemo(
+    () => [...classifyResults, ...scanResults.orphanedPaths],
+    [classifyResults, scanResults.orphanedPaths]
+  );
 
   const cleanupMutation = useMutation(
     trpc.torrents.cleanupTorrents.mutationOptions({
@@ -220,7 +222,7 @@ export function GarbageCollection() {
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {filteredProblemPaths.map((problem, index) => (
+              {filteredProblemPaths.slice(0, 200).map((problem, index) => (
                 <Table.Row
                   key={index}
                   onClick={() => handleToggleSelect(problem.path)}
