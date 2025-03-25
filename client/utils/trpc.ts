@@ -13,7 +13,7 @@ export const queryClient = new QueryClient({
 });
 
 const trpcClient = createTRPCClient<AppRouter>({
-  links: [httpLink({ url: "/rtgc/trpc" })],
+  links: [httpLink({ url: "/rtgc/trpc", methodOverride: "POST" })],
 });
 
 export const trpc = createTRPCOptionsProxy<AppRouter>({
