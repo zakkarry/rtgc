@@ -33,6 +33,7 @@ const PROBLEM_TYPES = [
   "orphaned",
   "missingFiles",
   "unknown",
+  "timeout",
 ] as const;
 
 export function Rules() {
@@ -86,7 +87,7 @@ export function Rules() {
   return (
     <DialogRoot open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm" colorScheme="gray">
+        <Button size="sm" colorScheme="gray" variant="outline">
           Rules
         </Button>
       </DialogTrigger>

@@ -35,10 +35,10 @@ export function Home() {
           </Text>
         </Flex>
         <Flex gap={2} align="center">
+          <ColorModeButton />
           <Settings />
           <Rules />
-          <ColorModeButton />
-          <Button colorScheme="danger" onClick={() => logout()}>
+          <Button size="sm" colorScheme="danger" onClick={() => logout()}>
             Log Out
           </Button>
         </Flex>
