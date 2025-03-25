@@ -6,18 +6,12 @@ import {
 } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import type { CleanupResult, ProblemPath, ProblemType } from "../server/types";
-import {
-  DialogBackdrop,
-  DialogBody,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogRoot,
-} from "./ui/dialog";
 import { trpc } from "./utils/trpc";
 import { TypeFilter } from "./components/TypeFilter";
 import { ProblemPathsTable } from "./components/ProblemPathsTable";
 import { filesize } from "filesize";
+import { ConfirmDialog } from "./components/ConfirmDialog";
+import { GarbageSummary } from "./components/GarbageSummary";
 
 export function GarbageCollection() {
   const queryClient = useQueryClient();
@@ -90,24 +84,12 @@ export function GarbageCollection() {
   );
 
   return (
-    <Box>
-      <Heading size="lg" mb={6}>
-        Garbage Collection
-      </Heading>
-      <Flex mb={6} p={4} bg={summaryBg} borderRadius="md" gap={8}>
-        <Box>
-          <Text fontWeight="bold">Problem Paths</Text>
-          <Text fontSize="2xl">{allResults.length}</Text>
-        </Box>
-        <Box>
-          <Text fontWeight="bold">Total Size</Text>
-          <Text fontSize="2xl">{filesize(totalProblemSize)}</Text>
-        </Box>
-      </Flex>
-      <Flex justify="space-between" mb={4} gap={2}>
+    <Flex gap={4} direction="column">
+      <Flex justify="space-between" gap={2}>
         <Box marginRight="auto">
           <TypeFilter
             selectedTypes={selectedTypes}
+            problemPaths={allResults}
             onChange={setSelectedTypes}
           />
         </Box>
@@ -122,6 +104,10 @@ export function GarbageCollection() {
           Clean Up All
         </Button>
       </Flex>
+      <GarbageSummary
+        totalPaths={allResults.length}
+        totalSize={totalProblemSize}
+      />
       {filteredProblemPaths.length === 0 ? (
         <Box p={4} bg={successBg} color={successColor} borderRadius="md">
           <Text>
@@ -133,30 +119,13 @@ export function GarbageCollection() {
       ) : (
         <ProblemPathsTable problemPaths={filteredProblemPaths} />
       )}
-      {showConfirm && (
-        <DialogRoot
-          open={showConfirm}
-          onOpenChange={({ open }) => setShowConfirm(open)}
-        >
-          <DialogBackdrop />
-          <DialogContent>
-            <DialogHeader>Confirm Cleanup</DialogHeader>
-            <DialogBody>
-              <Text>
-                Are you sure you want to delete {filteredProblemPaths.length}{" "}
-                paths ({filesize(totalProblemSize)})? This action cannot be
-                undone.
-              </Text>
-            </DialogBody>
-            <DialogFooter gap={2}>
-              <Button onClick={handleCancelCleanup}>Cancel</Button>
-              <Button colorScheme="danger" onClick={handleConfirmCleanup}>
-                Delete
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </DialogRoot>
-      )}
-    </Box>
+      <ConfirmDialog
+        showConfirm={showConfirm}
+        onCancel={handleCancelCleanup}
+        onConfirm={handleConfirmCleanup}
+        length={filteredProblemPaths.length}
+        totalProblemSize={totalProblemSize}
+      />
+    </Flex>
   );
 }

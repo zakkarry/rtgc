@@ -1,9 +1,10 @@
 import { Flex } from "@chakra-ui/react";
-import { type ProblemType } from "../../server/types";
+import { ProblemPath, type ProblemType } from "../../server/types";
 import { Checkbox } from "../ui/checkbox";
 
 interface TypeFilterProps {
   selectedTypes: Set<ProblemType>;
+  problemPaths: ProblemPath[];
   onChange: (types: Set<ProblemType>) => void;
 }
 
@@ -16,7 +17,13 @@ const PROBLEM_TYPES: ProblemType[] = [
   "healthy",
 ];
 
-export function TypeFilter({ selectedTypes, onChange }: TypeFilterProps) {
+export function TypeFilter({
+  selectedTypes,
+  problemPaths,
+  onChange,
+}: TypeFilterProps) {
+  const counts = Object.groupBy(problemPaths, (p) => p.type);
+
   return (
     <Flex gap={2} align="center">
       <Checkbox
@@ -49,7 +56,7 @@ export function TypeFilter({ selectedTypes, onChange }: TypeFilterProps) {
             onChange(newTypes);
           }}
         >
-          {type}
+          {type} ({counts[type]?.length ?? 0})
         </Checkbox>
       ))}
     </Flex>

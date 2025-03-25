@@ -1,16 +1,23 @@
-import { Box, Badge } from "@chakra-ui/react";
+import { Box, Badge, Flex, Button, Icon, Text } from "@chakra-ui/react";
 import { Table } from "@chakra-ui/react";
 import { filesize } from "filesize";
 import type { ProblemPath } from "../../server/types";
 
 export function ProblemPathsTable({ problemPaths }: ProblemPathsTableProps) {
   return (
-    <Box overflowX="auto">
-      <Table.Root variant="line" size="md">
+    <Flex direction="column" gap={2}>
+      <Box alignSelf="end">
+        <Text>
+          Displaying {Math.min(problemPaths.length, 200)} of{" "}
+          {problemPaths.length}
+        </Text>
+      </Box>
+      <Table.Root variant="line" size="sm">
         <Table.Header>
           <Table.Row>
             <Table.ColumnHeader>Type</Table.ColumnHeader>
-            <Table.ColumnHeader>Path</Table.ColumnHeader>
+            <Table.ColumnHeader>Name</Table.ColumnHeader>
+            <Table.ColumnHeader>Directory</Table.ColumnHeader>
             <Table.ColumnHeader>Message</Table.ColumnHeader>
             <Table.ColumnHeader>Size</Table.ColumnHeader>
             <Table.ColumnHeader>Last Modified</Table.ColumnHeader>
@@ -29,8 +36,9 @@ export function ProblemPathsTable({ problemPaths }: ProblemPathsTableProps) {
                 whiteSpace="nowrap"
                 title={problem.path}
               >
-                {problem.path}
+                {problem.path.split("/").at(-1)}
               </Table.Cell>
+              <Table.Cell>{problem.path.split("/").at(-2)}</Table.Cell>
               <Table.Cell>{problem.torrentInfo?.message || "--"}</Table.Cell>
               <Table.Cell>{filesize(problem.size)}</Table.Cell>
               <Table.Cell>
@@ -40,7 +48,7 @@ export function ProblemPathsTable({ problemPaths }: ProblemPathsTableProps) {
           ))}
         </Table.Body>
       </Table.Root>
-    </Box>
+    </Flex>
   );
 }
 export interface ProblemPathsTableProps {

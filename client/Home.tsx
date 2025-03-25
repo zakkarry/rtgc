@@ -21,14 +21,7 @@ export function Home() {
 
   return (
     <div>
-      <Flex
-        as="nav"
-        justify="space-between"
-        align="center"
-        p={4}
-        bg="bg.subtle"
-        boxShadow="sm"
-      >
+      <Flex as="nav" justify="space-between" align="center" p={4} bg="bg.muted">
         <Flex>
           <Text fontSize="lg" fontWeight="bold">
             rTorrent Garbage Collection
