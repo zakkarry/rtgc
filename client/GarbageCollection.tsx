@@ -1,13 +1,4 @@
-import {
-  Badge,
-  Box,
-  Button,
-  Checkbox,
-  Flex,
-  Heading,
-  Table,
-  Text,
-} from "@chakra-ui/react";
+import { Box, Button, Flex, Heading, Text } from "@chakra-ui/react";
 import {
   useMutation,
   useQueryClient,
@@ -25,23 +16,11 @@ import {
 } from "./ui/dialog";
 import { trpc } from "./utils/trpc";
 import { TypeFilter } from "./components/TypeFilter";
-
-function formatSize(bytes: number): string {
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let size = bytes;
-  let unitIndex = 0;
-
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex++;
-  }
-
-  return `${size.toFixed(2)} ${units[unitIndex]}`;
-}
+import { ProblemPathsTable } from "./components/ProblemPathsTable";
+import { filesize } from "filesize";
 
 export function GarbageCollection() {
   const queryClient = useQueryClient();
-  const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState<Set<ProblemType>>(
     new Set(["missingFiles", "orphaned", "timeout", "unknown", "unregistered"])
@@ -73,7 +52,6 @@ export function GarbageCollection() {
         queryClient.invalidateQueries({
           queryKey: trpc.torrents.scanTorrents.queryKey(),
         });
-        setSelectedPaths([]);
       },
       onError: (error) => {
         console.error("Cleanup failed", error);
@@ -81,38 +59,12 @@ export function GarbageCollection() {
     })
   );
 
-  const handleToggleSelect = (path: string) => {
-    const selected = new Set(selectedPaths);
-    selected.has(path) ? selected.delete(path) : selected.add(path);
-    setSelectedPaths(Array.from(selected));
-  };
-
-  const handleSelectAll = () => {
-    if (selectedPaths.length === filteredProblemPaths.length) {
-      // Deselect only the filtered paths
-      const filteredPathSet = new Set(
-        filteredProblemPaths.map((p: ProblemPath) => p.path)
-      );
-      setSelectedPaths(
-        selectedPaths.filter((path) => !filteredPathSet.has(path))
-      );
-    } else {
-      // Select all filtered paths while keeping previously selected paths that aren't in the current filter
-      const newSelectedPaths = new Set(selectedPaths);
-      filteredProblemPaths.forEach((p: ProblemPath) =>
-        newSelectedPaths.add(p.path)
-      );
-      setSelectedPaths(Array.from(newSelectedPaths));
-    }
-  };
-
   const handleCleanup = () => {
-    if (selectedPaths.length === 0) return;
     setShowConfirm(true);
   };
 
   const handleConfirmCleanup = () => {
-    cleanupMutation.mutate({ paths: selectedPaths });
+    cleanupMutation.mutate({ paths: allResults.map((p) => p.path) });
     setShowConfirm(false);
   };
 
@@ -125,13 +77,6 @@ export function GarbageCollection() {
       ? allResults
       : allResults.filter((p: ProblemPath) => selectedTypes.has(p.type));
   }, [allResults, selectedTypes]);
-
-  const selectedSize = useMemo(() => {
-    return selectedPaths.reduce((sum, path) => {
-      const problemPath = allResults.find((p: ProblemPath) => p.path === path);
-      return sum + (problemPath?.size ?? 0);
-    }, 0);
-  }, [allResults, selectedPaths]);
 
   const handleRescan = () => {
     queryClient.invalidateQueries({
@@ -156,49 +101,26 @@ export function GarbageCollection() {
         </Box>
         <Box>
           <Text fontWeight="bold">Total Size</Text>
-          <Text fontSize="2xl">{formatSize(totalProblemSize)}</Text>
+          <Text fontSize="2xl">{filesize(totalProblemSize)}</Text>
         </Box>
-        {selectedPaths.length > 0 && (
-          <Box>
-            <Text fontWeight="bold">Selected</Text>
-            <Text fontSize="2xl">{selectedPaths.length} paths</Text>
-            <Text fontSize="sm" opacity="0.8">
-              {formatSize(selectedSize)}
-            </Text>
-          </Box>
-        )}
       </Flex>
-      <Flex justify="space-between" mb={4}>
-        <Box>
-          <Flex gap={2}>
-            <Button onClick={handleRescan} colorScheme="primary">
-              Refresh
-            </Button>
-            <TypeFilter
-              selectedTypes={selectedTypes}
-              onChange={setSelectedTypes}
-            />
-          </Flex>
+      <Flex justify="space-between" mb={4} gap={2}>
+        <Box marginRight="auto">
+          <TypeFilter
+            selectedTypes={selectedTypes}
+            onChange={setSelectedTypes}
+          />
         </Box>
-        <Flex gap={2}>
-          <Button
-            onClick={handleSelectAll}
-            colorScheme="gray"
-            disabled={filteredProblemPaths.length === 0}
-          >
-            {selectedPaths.length === filteredProblemPaths.length &&
-            filteredProblemPaths.every((p) => selectedPaths.includes(p.path))
-              ? "Deselect All"
-              : "Select All"}
-          </Button>
-          <Button
-            onClick={handleCleanup}
-            colorScheme="danger"
-            disabled={selectedPaths.length === 0}
-          >
-            Clean Up Selected ({selectedPaths.length})
-          </Button>
-        </Flex>
+        <Button onClick={handleRescan} colorScheme="primary" variant="outline">
+          Refresh
+        </Button>
+        <Button
+          onClick={handleCleanup}
+          colorScheme="danger"
+          disabled={filteredProblemPaths.length === 0}
+        >
+          Clean Up All
+        </Button>
       </Flex>
       {filteredProblemPaths.length === 0 ? (
         <Box p={4} bg={successBg} color={successColor} borderRadius="md">
@@ -209,58 +131,7 @@ export function GarbageCollection() {
           </Text>
         </Box>
       ) : (
-        <Box overflowX="auto">
-          <Table.Root variant="line" size="md">
-            <Table.Header>
-              <Table.Row>
-                <Table.ColumnHeader>Select</Table.ColumnHeader>
-                <Table.ColumnHeader>Type</Table.ColumnHeader>
-                <Table.ColumnHeader>Path</Table.ColumnHeader>
-                <Table.ColumnHeader>Message</Table.ColumnHeader>
-                <Table.ColumnHeader>Size</Table.ColumnHeader>
-                <Table.ColumnHeader>Last Modified</Table.ColumnHeader>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {filteredProblemPaths.slice(0, 200).map((problem, index) => (
-                <Table.Row
-                  key={index}
-                  onClick={() => handleToggleSelect(problem.path)}
-                  cursor="pointer"
-                  _hover={{ bg: "bg.subtle" }}
-                >
-                  <Table.Cell>
-                    <Checkbox.Root
-                      checked={selectedPaths.includes(problem.path)}
-                      pointerEvents="none"
-                    >
-                      <Checkbox.Control />
-                    </Checkbox.Root>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <Badge>{problem.type}</Badge>
-                  </Table.Cell>
-                  <Table.Cell
-                    maxW="xs"
-                    textOverflow="ellipsis"
-                    overflow="hidden"
-                    whiteSpace="nowrap"
-                    title={problem.path}
-                  >
-                    {problem.path}
-                  </Table.Cell>
-                  <Table.Cell>
-                    {problem.torrentInfo?.message || "--"}
-                  </Table.Cell>
-                  <Table.Cell>{formatSize(problem.size)}</Table.Cell>
-                  <Table.Cell>
-                    {new Date(problem.lastModified).toLocaleDateString("sv")}
-                  </Table.Cell>
-                </Table.Row>
-              ))}
-            </Table.Body>
-          </Table.Root>
-        </Box>
+        <ProblemPathsTable problemPaths={filteredProblemPaths} />
       )}
       {showConfirm && (
         <DialogRoot
@@ -272,8 +143,9 @@ export function GarbageCollection() {
             <DialogHeader>Confirm Cleanup</DialogHeader>
             <DialogBody>
               <Text>
-                Are you sure you want to delete {selectedPaths.length} paths (
-                {formatSize(selectedSize)})? This action cannot be undone.
+                Are you sure you want to delete {filteredProblemPaths.length}{" "}
+                paths ({filesize(totalProblemSize)})? This action cannot be
+                undone.
               </Text>
             </DialogBody>
             <DialogFooter gap={2}>

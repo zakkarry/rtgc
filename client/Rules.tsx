@@ -58,6 +58,9 @@ export function Rules() {
         queryClient.invalidateQueries({
           queryKey: trpc.rules.getRules.queryKey(),
         });
+        queryClient.invalidateQueries({
+          queryKey: trpc.torrents.classifyTorrents.queryKey(),
+        });
         setNewSubstring("");
         setNewType("unknown");
       },
