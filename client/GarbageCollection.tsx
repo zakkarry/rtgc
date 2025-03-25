@@ -16,7 +16,9 @@ import { GarbageSummary } from "./components/GarbageSummary";
 export function GarbageCollection() {
   const queryClient = useQueryClient();
   const [showConfirm, setShowConfirm] = useState(false);
-  const [selectedType, setSelectedType] = useState<ProblemType | null>(null);
+  const [selectedType, setSelectedType] = useState<ProblemType | null>(
+    "unregistered"
+  );
 
   const { data: scanResults } = useSuspenseQuery(
     trpc.torrents.scanTorrents.queryOptions()

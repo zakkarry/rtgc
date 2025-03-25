@@ -39,7 +39,15 @@ export function ProblemPathsTable({ problemPaths }: ProblemPathsTableProps) {
                 {problem.path.split("/").at(-1)}
               </Table.Cell>
               <Table.Cell>{problem.path.split("/").at(-2)}</Table.Cell>
-              <Table.Cell>{problem.torrentInfo?.message || "--"}</Table.Cell>
+              <Table.Cell
+                maxW="sm"
+                textOverflow="ellipsis"
+                overflow="hidden"
+                whiteSpace="nowrap"
+                title={problem.torrentInfo?.message || "--"}
+              >
+                {problem.torrentInfo?.message || "--"}
+              </Table.Cell>
               <Table.Cell>{filesize(problem.size)}</Table.Cell>
               <Table.Cell>
                 {new Date(problem.lastModified).toLocaleDateString("sv")}

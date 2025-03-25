@@ -90,7 +90,39 @@ export async function scanTorrents(
 ): Promise<ScanResult> {
   if (process.env.NODE_ENV !== "production") {
     return {
-      torrentPaths: [],
+      torrentPaths: [
+        {
+          path: "/downloads/testthisIsAlsoReallyLongAndShouldBeTruncated  ",
+          size: 100,
+          type: "unknown",
+          torrentInfo: {
+            message:
+              "This is a really long message that should be truncated and it needs to be even longer and longer and longer and longer and longer",
+            infoHash: "test",
+            name: "test",
+            tracker: "test",
+            directory: "test",
+            basePath: "test",
+            custom1: "test",
+          },
+          lastModified: Date.now(),
+        },
+        {
+          path: "/downloads/test2thisIsAlsoReallyLongAndShouldBeTruncated",
+          size: 200,
+          type: "unregistered",
+          torrentInfo: {
+            message: "This is a really long message that should be truncated",
+            infoHash: "test",
+            name: "test",
+            tracker: "test",
+            directory: "test",
+            basePath: "test",
+            custom1: "test",
+          },
+          lastModified: Date.now(),
+        },
+      ],
       orphanedPaths: [
         {
           path: "/downloads/test",
