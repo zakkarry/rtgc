@@ -1,0 +1,39 @@
+---
+description: 
+globs: client/**/*.tsx,client/**/*.ts
+alwaysApply: false
+---
+# React Suspense and Data Handling
+
+When using React Suspense with `useSuspenseQuery`, the data will always be available in the component. The query's loading and error states are handled automatically by React's Suspense boundaries.
+
+❌ Don't do this:
+```tsx
+const { data } = useSuspenseQuery(query);
+
+// Unnecessary check - data will always exist
+if (!data) return null;
+
+// Unnecessary null checks in derived state
+const derived = useMemo(() => {
+  if (!data) return [];
+  return data.map(item => ...);
+}, [data]);
+```
+
+✅ Do this instead:
+```tsx
+const { data } = useSuspenseQuery(query);
+
+// Data is guaranteed to exist
+const derived = useMemo(() => {
+  return data.map(item => ...);
+}, [data]);
+```
+
+This applies to:
+- Direct data access
+- Derived state in `useMemo`
+- Rendering logic
+
+Let React's Suspense boundaries handle loading and error states instead of defensive programming in the component.

@@ -14,8 +14,8 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { useState } from "react";
-import type { CleanupResult, ProblemType } from "../server/types";
+import { useState, useMemo } from "react";
+import type { CleanupResult, ProblemPath, ProblemType } from "../server/types";
 import {
   DialogBackdrop,
   DialogBody,
@@ -25,6 +25,7 @@ import {
   DialogRoot,
 } from "./ui/dialog";
 import { trpc } from "./utils/trpc";
+import { TypeFilter } from "./components/TypeFilter";
 
 function formatSize(bytes: number): string {
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -43,7 +44,9 @@ export function GarbageCollection() {
   const queryClient = useQueryClient();
   const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<ProblemType | "all">("all");
+  const [selectedTypes, setSelectedTypes] = useState<Set<ProblemType>>(
+    new Set()
+  );
 
   const summaryBg = "bg.muted";
   const successBg = "success.50";
@@ -51,9 +54,15 @@ export function GarbageCollection() {
   const warningBg = "warning.50";
   const warningColor = "warning.700";
 
-  const { data, refetch } = useSuspenseQuery(
+  const { data: scanResults } = useSuspenseQuery(
     trpc.torrents.scanTorrents.queryOptions()
   );
+
+  const { data: classifyResults } = useSuspenseQuery(
+    trpc.torrents.classifyTorrents.queryOptions(scanResults.torrentPaths)
+  );
+
+  const allResults = [...classifyResults, ...scanResults.orphanedPaths];
 
   const cleanupMutation = useMutation(
     trpc.torrents.cleanupTorrents.mutationOptions({
@@ -77,17 +86,20 @@ export function GarbageCollection() {
   };
 
   const handleSelectAll = () => {
-    if (!data) return;
     if (selectedPaths.length === filteredProblemPaths.length) {
       // Deselect only the filtered paths
-      const filteredPathSet = new Set(filteredProblemPaths.map((p) => p.path));
+      const filteredPathSet = new Set(
+        filteredProblemPaths.map((p: ProblemPath) => p.path)
+      );
       setSelectedPaths(
         selectedPaths.filter((path) => !filteredPathSet.has(path))
       );
     } else {
       // Select all filtered paths while keeping previously selected paths that aren't in the current filter
       const newSelectedPaths = new Set(selectedPaths);
-      filteredProblemPaths.forEach((p) => newSelectedPaths.add(p.path));
+      filteredProblemPaths.forEach((p: ProblemPath) =>
+        newSelectedPaths.add(p.path)
+      );
       setSelectedPaths(Array.from(newSelectedPaths));
     }
   };
@@ -97,36 +109,38 @@ export function GarbageCollection() {
     setShowConfirm(true);
   };
 
-  const confirmCleanup = () => {
-    setShowConfirm(false);
+  const handleConfirmCleanup = () => {
     cleanupMutation.mutate({ paths: selectedPaths });
+    setShowConfirm(false);
   };
 
-  const selectedSize = data
-    ? data.problemPaths
-        .filter((p) => selectedPaths.includes(p.path))
-        .reduce((sum, p) => sum + p.size, 0)
-    : 0;
+  const handleCancelCleanup = () => {
+    setShowConfirm(false);
+  };
 
-  const filteredProblemPaths =
-    data?.problemPaths.filter((p) => {
-      if (typeFilter === "all") return true;
-      return p.type === typeFilter;
-    }) || [];
+  const filteredProblemPaths = useMemo(() => {
+    return selectedTypes.size === 0
+      ? allResults
+      : allResults.filter((p: ProblemPath) => selectedTypes.has(p.type));
+  }, [allResults, selectedTypes]);
 
-  if (!data) {
-    return (
-      <Box p={4} bg={warningBg} color={warningColor} borderRadius="md">
-        <Heading size="md" mb={2}>
-          No Data
-        </Heading>
-        <Text>No data was returned from the server.</Text>
-        <Button mt={4} onClick={() => refetch()} colorScheme="warning">
-          Retry
-        </Button>
-      </Box>
-    );
-  }
+  const selectedSize = useMemo(() => {
+    return selectedPaths.reduce((sum, path) => {
+      const problemPath = allResults.find((p: ProblemPath) => p.path === path);
+      return sum + (problemPath?.size ?? 0);
+    }, 0);
+  }, [allResults, selectedPaths]);
+
+  const handleRescan = () => {
+    queryClient.invalidateQueries({
+      queryKey: trpc.torrents.scanTorrents.queryKey(),
+    });
+  };
+
+  const totalProblemSize = allResults.reduce(
+    (sum, p: ProblemPath) => sum + p.size,
+    0
+  );
 
   return (
     <Box>
@@ -136,17 +150,11 @@ export function GarbageCollection() {
       <Flex mb={6} p={4} bg={summaryBg} borderRadius="md" gap={8}>
         <Box>
           <Text fontWeight="bold">Problem Paths</Text>
-          <Text fontSize="2xl">{data.problemPaths.length}</Text>
-          <Text fontSize="sm" opacity="0.8">
-            {data.percentageOfTotalPaths.toFixed(2)}% of total paths
-          </Text>
+          <Text fontSize="2xl">{allResults.length}</Text>
         </Box>
         <Box>
           <Text fontWeight="bold">Total Size</Text>
-          <Text fontSize="2xl">{formatSize(data.totalSize)}</Text>
-          <Text fontSize="sm" opacity="0.8">
-            {data.percentageOfTotalSize.toFixed(2)}% of total size
-          </Text>
+          <Text fontSize="2xl">{formatSize(totalProblemSize)}</Text>
         </Box>
         {selectedPaths.length > 0 && (
           <Box>
@@ -161,24 +169,13 @@ export function GarbageCollection() {
       <Flex justify="space-between" mb={4}>
         <Box>
           <Flex gap={2}>
-            <Button onClick={() => refetch()} colorScheme="primary">
+            <Button onClick={handleRescan} colorScheme="primary">
               Refresh
             </Button>
-            <NativeSelect.Root>
-              <NativeSelect.Field
-                value={typeFilter}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  setTypeFilter(e.target.value as ProblemType | "all")
-                }
-              >
-                <option value="all">All Types</option>
-                <option value="unregistered">Unregistered</option>
-                <option value="orphaned">Orphaned</option>
-                <option value="missingFiles">Missing Files</option>
-                <option value="unknown">Unknown</option>
-              </NativeSelect.Field>
-              <NativeSelect.Indicator />
-            </NativeSelect.Root>
+            <TypeFilter
+              selectedTypes={selectedTypes}
+              onChange={setSelectedTypes}
+            />
           </Flex>
         </Box>
         <Flex gap={2}>
@@ -204,7 +201,7 @@ export function GarbageCollection() {
       {filteredProblemPaths.length === 0 ? (
         <Box p={4} bg={successBg} color={successColor} borderRadius="md">
           <Text>
-            {data.problemPaths.length === 0
+            {allResults.length === 0
               ? "No problems found! Your torrents and filesystem are clean."
               : "No problems match the selected filter."}
           </Text>
@@ -278,8 +275,8 @@ export function GarbageCollection() {
               </Text>
             </DialogBody>
             <DialogFooter gap={2}>
-              <Button onClick={() => setShowConfirm(false)}>Cancel</Button>
-              <Button colorScheme="danger" onClick={confirmCleanup}>
+              <Button onClick={handleCancelCleanup}>Cancel</Button>
+              <Button colorScheme="danger" onClick={handleConfirmCleanup}>
                 Delete
               </Button>
             </DialogFooter>

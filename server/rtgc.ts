@@ -90,7 +90,8 @@ export async function scanTorrents(
 ): Promise<ScanResult> {
   if (process.env.NODE_ENV !== "production") {
     return {
-      problemPaths: [
+      torrentPaths: [],
+      orphanedPaths: [
         {
           path: "/downloads/test",
           size: 100,
@@ -114,7 +115,8 @@ export async function scanTorrents(
   const downloadList = await rtorrent.downloadList();
   const torrents = await rtorrent.getTorrentsBatched(downloadList);
 
-  const problemPaths: ProblemPath[] = [];
+  const torrentPaths: ProblemPath[] = [];
+  const orphanedPaths: ProblemPath[] = [];
   const session: TorrentInfo[] = [];
 
   // Scan torrents first
@@ -125,38 +127,15 @@ export async function scanTorrents(
       du(torrent.basePath),
     ]);
 
-    if (isUnregistered(torrent)) {
-      problemPaths.push({
-        path: torrent.basePath,
-        size,
-        type: "unregistered",
-        torrentInfo: torrent,
-        lastModified: stats?.mtime ? stats.mtime.getTime() : Date.now(),
-      });
-    } else if (
-      torrent.message.trim() ===
-      "Download registered as completed, but hash check returned unfinished chunks."
-    ) {
-      problemPaths.push({
-        path: torrent.basePath,
-        size,
-        type: "missingFiles",
-        torrentInfo: torrent,
-        lastModified: stats?.mtime ? stats.mtime.getTime() : Date.now(),
-      });
-    } else {
-      session.push(torrent);
-
-      if (torrent.message && !torrent.message.includes("Timed out")) {
-        problemPaths.push({
-          path: torrent.basePath,
-          size,
-          type: "unknown",
-          torrentInfo: torrent,
-          lastModified: stats?.mtime ? stats.mtime.getTime() : Date.now(),
-        });
-      }
-    }
+    // Add all torrents to torrentPaths for classification
+    torrentPaths.push({
+      path: torrent.basePath,
+      size,
+      type: "unknown", // Initial type, will be classified later
+      torrentInfo: torrent,
+      lastModified: stats?.mtime ? stats.mtime.getTime() : Date.now(),
+    });
+    session.push(torrent);
   }
 
   // Then scan for orphaned paths
@@ -164,16 +143,16 @@ export async function scanTorrents(
   const pathsInSession = new Set(session.map((e) => e.basePath));
   const pathsHoldingHardlinkTargets = await findHardlinkTargetPaths(dataDirs);
 
-  const orphanedPaths = allPaths.filter(
+  const orphanedPathsList = allPaths.filter(
     (path) =>
       !(pathsInSession.has(path) || pathsHoldingHardlinkTargets.has(path))
   );
 
-  // Add orphaned paths to problem paths
-  for (const path of orphanedPaths) {
+  // Add orphaned paths
+  for (const path of orphanedPathsList) {
     const stats = await stat(path);
     const size = await du(path);
-    problemPaths.push({
+    orphanedPaths.push({
       path,
       size,
       type: "orphaned",
@@ -181,17 +160,22 @@ export async function scanTorrents(
     });
   }
 
-  const totalSize = problemPaths.reduce((sum, p) => sum + p.size, 0);
+  const totalSize = [...torrentPaths, ...orphanedPaths].reduce(
+    (sum, p) => sum + p.size,
+    0
+  );
   const totalPathSize = (await Promise.all(allPaths.map((p) => du(p)))).reduce(
     (sum, size) => sum + size,
     0
   );
 
   return {
-    problemPaths,
+    torrentPaths,
+    orphanedPaths,
     totalSize,
     totalPaths: allPaths.length,
-    percentageOfTotalPaths: (problemPaths.length / allPaths.length) * 100,
+    percentageOfTotalPaths:
+      ((torrentPaths.length + orphanedPaths.length) / allPaths.length) * 100,
     percentageOfTotalSize: (totalSize / totalPathSize) * 100,
   };
 }

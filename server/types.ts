@@ -29,6 +29,7 @@ export type ProblemType =
   | "unregistered"
   | "orphaned"
   | "missingFiles"
+  | "timeout"
   | "unknown";
 
 export interface ProblemPath {
@@ -41,7 +42,10 @@ export interface ProblemPath {
 }
 
 export interface ScanResult {
-  problemPaths: ProblemPath[];
+  // Paths that have associated torrents and need classification
+  torrentPaths: ProblemPath[];
+  // Paths that are definitely orphaned (no associated torrent)
+  orphanedPaths: ProblemPath[];
   totalSize: number;
   totalPaths: number;
   percentageOfTotalPaths: number;
