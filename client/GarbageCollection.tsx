@@ -1,4 +1,4 @@
-import { Box, Button, Flex, Heading, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import {
   useMutation,
   useQueryClient,
@@ -16,15 +16,7 @@ import { GarbageSummary } from "./components/GarbageSummary";
 export function GarbageCollection() {
   const queryClient = useQueryClient();
   const [showConfirm, setShowConfirm] = useState(false);
-  const [selectedTypes, setSelectedTypes] = useState<Set<ProblemType>>(
-    new Set(["missingFiles", "orphaned", "timeout", "unknown", "unregistered"])
-  );
-
-  const summaryBg = "bg.muted";
-  const successBg = "success.50";
-  const successColor = "success.700";
-  const warningBg = "warning.50";
-  const warningColor = "warning.700";
+  const [selectedType, setSelectedType] = useState<ProblemType | null>(null);
 
   const { data: scanResults } = useSuspenseQuery(
     trpc.torrents.scanTorrents.queryOptions()
@@ -66,11 +58,13 @@ export function GarbageCollection() {
     setShowConfirm(false);
   };
 
-  const filteredProblemPaths = useMemo(() => {
-    return selectedTypes.size === 0
-      ? allResults
-      : allResults.filter((p: ProblemPath) => selectedTypes.has(p.type));
-  }, [allResults, selectedTypes]);
+  const filteredProblemPaths = useMemo(
+    () =>
+      selectedType
+        ? allResults.filter((p: ProblemPath) => p.type === selectedType)
+        : allResults,
+    [allResults, selectedType]
+  );
 
   const handleRescan = () => {
     queryClient.invalidateQueries({
@@ -85,12 +79,12 @@ export function GarbageCollection() {
 
   return (
     <Flex gap={4} direction="column">
-      <Flex justify="space-between" gap={2}>
+      <Flex justify="space-between" gap={2} align="center">
         <Box marginRight="auto">
           <TypeFilter
-            selectedTypes={selectedTypes}
+            selectedType={selectedType}
             problemPaths={allResults}
-            onChange={setSelectedTypes}
+            onChange={setSelectedType}
           />
         </Box>
         <Button onClick={handleRescan} colorScheme="primary" variant="outline">
@@ -109,13 +103,7 @@ export function GarbageCollection() {
         totalSize={totalProblemSize}
       />
       {filteredProblemPaths.length === 0 ? (
-        <Box p={4} bg={successBg} color={successColor} borderRadius="md">
-          <Text>
-            {allResults.length === 0
-              ? "No problems found! Your torrents and filesystem are clean."
-              : "No problems match the selected filter."}
-          </Text>
-        </Box>
+        <Text fontSize="lg">No problems match the selected filter.</Text>
       ) : (
         <ProblemPathsTable problemPaths={filteredProblemPaths} />
       )}

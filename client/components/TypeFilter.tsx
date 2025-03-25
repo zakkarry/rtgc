@@ -1,11 +1,11 @@
-import { Flex } from "@chakra-ui/react";
+import { Button, Flex } from "@chakra-ui/react";
 import { ProblemPath, type ProblemType } from "../../server/types";
-import { Checkbox } from "../ui/checkbox";
+import { Radio, RadioGroup } from "../ui/radio";
 
 interface TypeFilterProps {
-  selectedTypes: Set<ProblemType>;
+  selectedType: ProblemType | null;
   problemPaths: ProblemPath[];
-  onChange: (types: Set<ProblemType>) => void;
+  onChange: (type: ProblemType | null) => void;
 }
 
 const PROBLEM_TYPES: ProblemType[] = [
@@ -18,7 +18,7 @@ const PROBLEM_TYPES: ProblemType[] = [
 ];
 
 export function TypeFilter({
-  selectedTypes,
+  selectedType,
   problemPaths,
   onChange,
 }: TypeFilterProps) {
@@ -26,38 +26,15 @@ export function TypeFilter({
 
   return (
     <Flex gap={2} align="center">
-      <Checkbox
-        checked={
-          selectedTypes.size === PROBLEM_TYPES.length
-            ? true
-            : selectedTypes.size === 0
-            ? false
-            : "indeterminate"
-        }
-        onCheckedChange={(checked) => {
-          if (checked.checked === "indeterminate") {
-            onChange(new Set());
-          } else if (checked.checked) {
-            onChange(new Set(PROBLEM_TYPES));
-          } else {
-            onChange(new Set());
-          }
-        }}
-      >
-        All types
-      </Checkbox>
       {PROBLEM_TYPES.map((type) => (
-        <Checkbox
+        <Button
           key={type}
-          checked={selectedTypes.has(type)}
-          onCheckedChange={(checked) => {
-            const newTypes = new Set(selectedTypes);
-            checked.checked ? newTypes.add(type) : newTypes.delete(type);
-            onChange(newTypes);
-          }}
+          value={type}
+          variant={selectedType === type ? "solid" : "subtle"}
+          onClick={() => onChange(type)}
         >
           {type} ({counts[type]?.length ?? 0})
-        </Checkbox>
+        </Button>
       ))}
     </Flex>
   );
