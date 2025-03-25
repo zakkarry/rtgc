@@ -15,7 +15,11 @@ const BASE_URL = "/rtgc";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const fastify = Fastify({ logger: true }).register(fastifyCookie);
+const fastify = Fastify({
+  logger: true,
+  // 100MiB
+  bodyLimit: 1024 * 1024 * 100,
+}).register(fastifyCookie);
 
 process.on("SIGTERM", () => {
   console.log("SIGTERM");
