@@ -62,6 +62,7 @@ export const torrents = router({
             "orphaned",
             "missingFiles",
             "unknown",
+            "timeout",
           ]),
           torrentInfo: z
             .object({

@@ -11,6 +11,7 @@ const ruleSchema = z.object({
     "unregistered",
     "orphaned",
     "missingFiles",
+    "timeout",
     "unknown",
   ] as const satisfies readonly ProblemType[]),
 });

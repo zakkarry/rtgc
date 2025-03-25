@@ -11,8 +11,8 @@ const PROBLEM_TYPES: ProblemType[] = [
   "unregistered",
   "orphaned",
   "missingFiles",
-  "unknown",
   "timeout",
+  "unknown",
   "healthy",
 ];
 
