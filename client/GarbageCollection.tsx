@@ -16,6 +16,7 @@ import { GarbageSummary } from "./components/GarbageSummary";
 import { ProblemPathsTable } from "./components/ProblemPathsTable";
 import { TypeFilter } from "./components/TypeFilter";
 import { trpc } from "./utils/trpc";
+import { Checkbox } from "./ui/checkbox";
 
 export function GarbageCollection() {
   const queryClient = useQueryClient();
@@ -23,6 +24,7 @@ export function GarbageCollection() {
   const [selectedType, setSelectedType] = useState<ProblemType | "orphaned">(
     "unregistered"
   );
+  const [showOnlyStale, setShowOnlyStale] = useState(false);
 
   const [{ data: scanResults }, { data: orphanedResults }] = useSuspenseQueries(
     {
@@ -38,13 +40,22 @@ export function GarbageCollection() {
   );
 
   const allResults = useMemo(() => {
-    if (selectedType === "orphaned") {
-      return orphanedResults;
+    let results =
+      selectedType === "orphaned"
+        ? orphanedResults
+        : selectedType
+        ? classifyResults.filter((p) => p.type === selectedType)
+        : classifyResults;
+
+    if (selectedType === "orphaned" && showOnlyStale) {
+      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      results = (results as OrphanedPath[]).filter(
+        (p) => p.lastModified < thirtyDaysAgo
+      );
     }
-    return selectedType
-      ? classifyResults.filter((p) => p.type === selectedType)
-      : classifyResults;
-  }, [classifyResults, orphanedResults, selectedType]);
+
+    return results;
+  }, [classifyResults, orphanedResults, selectedType, showOnlyStale]);
 
   const deleteTorrentsMutation = useMutation(
     trpc.torrents.deleteTorrents.mutationOptions({
@@ -104,12 +115,24 @@ export function GarbageCollection() {
     <Flex gap={4} direction="column">
       <Flex justify="space-between" gap={2} align="center">
         <Box marginRight="auto">
-          <TypeFilter
-            selectedType={selectedType}
-            problemTorrents={classifyResults}
-            orphanedPaths={orphanedResults}
-            onChange={setSelectedType}
-          />
+          <Flex gap={4} align="center">
+            <TypeFilter
+              selectedType={selectedType}
+              problemTorrents={classifyResults}
+              orphanedPaths={orphanedResults}
+              onChange={setSelectedType}
+            />
+            {selectedType === "orphaned" && (
+              <Checkbox
+                checked={showOnlyStale}
+                onCheckedChange={(details) =>
+                  setShowOnlyStale(details.checked === true)
+                }
+              >
+                only 30+ days old
+              </Checkbox>
+            )}
+          </Flex>
         </Box>
         <Button onClick={handleRescan} colorScheme="primary" variant="outline">
           Refresh
