@@ -30,7 +30,6 @@ import type { Rule } from "../server/types";
 const PROBLEM_TYPES = [
   "healthy",
   "unregistered",
-  "orphaned",
   "missingFiles",
   "unknown",
   "timeout",

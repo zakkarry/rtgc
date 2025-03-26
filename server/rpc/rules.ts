@@ -9,7 +9,6 @@ const ruleSchema = z.object({
   type: z.enum([
     "healthy",
     "unregistered",
-    "orphaned",
     "missingFiles",
     "timeout",
     "unknown",
