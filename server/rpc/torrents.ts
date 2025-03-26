@@ -100,9 +100,13 @@ export const torrents = router({
     .input(z.object({ infoHashes: z.array(z.string()) }))
     .mutation(async ({ input }) => {
       try {
-        const { rtorrentUrl } = getSettings();
+        const { rtorrentUrl, failPastThreshold } = getSettings();
         const rtorrent = new RTorrent(rtorrentUrl);
-        return await deleteTorrents(rtorrent, input.infoHashes);
+        return await deleteTorrents(
+          rtorrent,
+          input.infoHashes,
+          failPastThreshold
+        );
       } catch (error) {
         console.error("Error deleting torrents:", error);
         throw new TRPCError({

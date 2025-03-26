@@ -11,7 +11,7 @@ import type {
   ProblemTorrent,
   ProblemType,
 } from "../server/types";
-import { ConfirmDialog } from "./components/ConfirmDialog";
+import { DeleteDialog } from "./components/ConfirmDialog";
 import { GarbageSummary } from "./components/GarbageSummary";
 import { ProblemTorrentsTable } from "./components/ProblemTorrentsTable";
 import { TypeFilter } from "./components/TypeFilter";
@@ -59,57 +59,11 @@ export function GarbageCollection() {
     return results;
   }, [classifyResults, orphanedResults, selectedType, showOnlyStale]);
 
-  const deleteTorrentsMutation = useMutation(
-    trpc.torrents.deleteTorrents.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.torrents.scanTorrents.queryKey(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: trpc.torrents.classifyTorrents.queryKey(),
-        });
-      },
-      onError: (error) => {
-        console.error("Cleanup failed", error);
-      },
-    })
-  );
-
-  const deleteOrphansMutation = useMutation(
-    trpc.paths.deleteOrphans.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.paths.scanForOrphans.queryKey(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: trpc.torrents.scanTorrents.queryKey(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: trpc.torrents.classifyTorrents.queryKey(),
-        });
-      },
-    })
-  );
   const handleCleanup = () => {
     setShowConfirm(true);
   };
 
   const handleCancelCleanup = () => {
-    setShowConfirm(false);
-  };
-
-  const handleConfirmCleanup = () => {
-    if (selectedType === "orphaned") {
-      deleteOrphansMutation.mutate({
-        orphanedPaths: filteredResults as OrphanedPath[],
-      });
-    } else {
-      deleteTorrentsMutation.mutate({
-        infoHashes: filteredResults.map(
-          (p) => (p as ProblemTorrent).torrentInfo.infoHash
-        ),
-      });
-    }
     setShowConfirm(false);
   };
 
@@ -180,13 +134,12 @@ export function GarbageCollection() {
           problemTorrents={filteredResults as ProblemTorrent[]}
         />
       )}
-      <ConfirmDialog
-        showConfirm={showConfirm}
-        onCancel={handleCancelCleanup}
-        onConfirm={handleConfirmCleanup}
-        length={filteredResults.length}
-        selectedSize={filteredSize}
-      />
+      {showConfirm && (
+        <DeleteDialog
+          onClose={() => setShowConfirm(false)}
+          filteredResults={filteredResults}
+        />
+      )}
     </Flex>
   );
 }

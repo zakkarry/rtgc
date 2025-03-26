@@ -1,10 +1,9 @@
-import { deleteTorrents, scanOrphanedPaths } from "../rtgc.ts";
-import { getSettings } from "../db.ts";
-import { protectedProcedure, router } from "../trpc.ts";
 import { z } from "zod";
-import { torrentInfoSchema } from "./torrents.ts";
+import { getSettings } from "../db.ts";
+import { deleteOrphanedPaths, scanOrphanedPaths } from "../rtgc.ts";
 import { RTorrent } from "../rtorrent.ts";
-import { rm } from "fs/promises";
+import { protectedProcedure, router } from "../trpc.ts";
+import { torrentInfoSchema } from "./torrents.ts";
 
 export const orphanedPathSchema = z.object({
   path: z.string(),
@@ -25,24 +24,13 @@ export const paths = router({
   deleteOrphans: protectedProcedure
     .input(z.object({ orphanedPaths: z.array(orphanedPathSchema) }))
     .mutation(async ({ input: { orphanedPaths } }) => {
-      const { rtorrentUrl, dataDirs } = getSettings();
+      const { rtorrentUrl, dataDirs, failPastThreshold } = getSettings();
       const rtorrent = new RTorrent(rtorrentUrl);
-
-      for (const orphan of orphanedPaths) {
-        if (!dataDirs.some((dir) => orphan.path.startsWith(dir))) {
-          throw new Error(`Path ${orphan.path} is not inside any dataDir`);
-        }
-      }
-
-      await deleteTorrents(
+      return await deleteOrphanedPaths(
+        orphanedPaths,
         rtorrent,
-        orphanedPaths.flatMap((p) => p.relatedTorrents.map((t) => t.infoHash))
-      );
-
-      await Promise.all(
-        orphanedPaths.map(async (orphan) => {
-          await rm(orphan.path, { recursive: true });
-        })
+        dataDirs,
+        failPastThreshold
       );
     }),
 });

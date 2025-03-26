@@ -137,7 +137,7 @@ export function Settings() {
         </DialogBody>
 
         <DialogFooter>
-          <Flex>
+          <Flex justifyContent="space-between">
             {error && (
               <Text color="red" fontSize="sm">
                 {error.message}

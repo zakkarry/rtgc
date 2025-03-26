@@ -1,9 +1,8 @@
 import du from "du";
-import { readdir, stat } from "node:fs/promises";
+import { readdir, rm, stat } from "node:fs/promises";
 import { join, normalize, resolve, sep } from "node:path";
 import { RTorrent } from "./rtorrent.ts";
 import type { OrphanedPath, ProblemTorrent, TorrentInfo } from "./types.ts";
-import { getSettings } from "./db.ts";
 
 async function getChildPaths(dataDir: string): Promise<string[]> {
   const entries = await readdir(dataDir);
@@ -175,8 +174,49 @@ export async function scanOrphanedPaths(
 
 export async function deleteTorrents(
   rtorrent: RTorrent,
-  infoHashes: string[]
+  infoHashes: string[],
+  failPastThreshold: number
 ): Promise<void> {
-  const { failPastThreshold } = getSettings();
   await rtorrent.removeTorrents(infoHashes, failPastThreshold);
+}
+
+export async function deleteOrphanedPaths(
+  orphanedPaths: OrphanedPath[],
+  rtorrent: RTorrent,
+  dataDirs: string[],
+  failPastThreshold: number
+): Promise<void> {
+  for (const orphan of orphanedPaths) {
+    if (!dataDirs.some((dir) => orphan.path.startsWith(dir))) {
+      throw new Error(`Path ${orphan.path} is not inside any dataDir`);
+    }
+  }
+
+  const totalSize = (
+    await Promise.all(orphanedPaths.map((path) => du(path.path)))
+  ).reduce((acc, size) => acc + size, 0);
+
+  const dataDirsSize = (
+    await Promise.all(dataDirs.map((dir) => du(dir)))
+  ).reduce((acc, size) => acc + size, 0);
+
+  if (totalSize / dataDirsSize > failPastThreshold) {
+    throw new Error(
+      `Total size of orphaned paths (${totalSize}) is greater than ${
+        failPastThreshold * 100
+      }% of the total size of data dirs (${dataDirsSize})`
+    );
+  }
+
+  await deleteTorrents(
+    rtorrent,
+    orphanedPaths.flatMap((p) => p.relatedTorrents.map((t) => t.infoHash)),
+    failPastThreshold
+  );
+
+  await Promise.all(
+    orphanedPaths.map(async (orphan) => {
+      await rm(orphan.path, { recursive: true });
+    })
+  );
 }
