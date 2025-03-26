@@ -43,9 +43,7 @@ export function OrphanedPathsTable({
                 {new Date(problem.lastModified).toLocaleDateString("sv")}
               </Table.Cell>
               <Table.Cell
-                title={problem.relatedTorrents
-                  .map((t) => new URL(t.tracker).hostname)
-                  .join(", ")}
+                title={problem.relatedTorrents.map((t) => t.tracker).join(", ")}
               >
                 {problem.relatedTorrents.length}
               </Table.Cell>
