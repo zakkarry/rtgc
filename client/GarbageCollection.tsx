@@ -13,10 +13,11 @@ import type {
 } from "../server/types";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { GarbageSummary } from "./components/GarbageSummary";
-import { ProblemPathsTable } from "./components/ProblemPathsTable";
+import { ProblemTorrentsTable } from "./components/ProblemTorrentsTable";
 import { TypeFilter } from "./components/TypeFilter";
 import { trpc } from "./utils/trpc";
 import { Checkbox } from "./ui/checkbox";
+import { OrphanedPathsTable } from "./components/OrphanedPathsTable";
 
 export function GarbageCollection() {
   const queryClient = useQueryClient();
@@ -26,18 +27,19 @@ export function GarbageCollection() {
   );
   const [showOnlyStale, setShowOnlyStale] = useState(false);
 
-  const [{ data: scanResults }, { data: orphanedResults }] = useSuspenseQueries(
-    {
-      queries: [
-        trpc.torrents.scanTorrents.queryOptions(),
-        trpc.paths.scanForOrphans.queryOptions(),
-      ],
-    }
+  const { data: scanResults } = useSuspenseQuery(
+    trpc.torrents.scanTorrents.queryOptions()
   );
 
-  const { data: classifyResults } = useSuspenseQuery(
-    trpc.torrents.classifyTorrents.queryOptions(scanResults)
-  );
+  const [{ data: classifyResults }, { data: orphanedResults }] =
+    useSuspenseQueries({
+      queries: [
+        trpc.torrents.classifyTorrents.queryOptions(scanResults),
+        trpc.paths.scanForOrphans.queryOptions({
+          allTorrents: scanResults.map((p) => p.torrentInfo),
+        }),
+      ],
+    });
 
   const allResults = useMemo(() => {
     let results =
@@ -155,12 +157,11 @@ export function GarbageCollection() {
       />
       {allResults.length === 0 ? (
         <Text fontSize="lg">No problems match the selected filter.</Text>
+      ) : selectedType === "orphaned" ? (
+        <OrphanedPathsTable orphanedPaths={allResults as OrphanedPath[]} />
       ) : (
-        <ProblemPathsTable
-          problemPaths={allResults}
-          showing={
-            selectedType === "orphaned" ? "orphanedPaths" : "problemTorrents"
-          }
+        <ProblemTorrentsTable
+          problemTorrents={allResults as ProblemTorrent[]}
         />
       )}
       <ConfirmDialog

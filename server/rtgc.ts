@@ -2,7 +2,7 @@ import du from "du";
 import { readdir, stat } from "node:fs/promises";
 import { join, normalize, resolve, sep } from "node:path";
 import { RTorrent } from "./rtorrent.ts";
-import type { OrphanedPath, ProblemTorrent } from "./types.ts";
+import type { OrphanedPath, ProblemTorrent, TorrentInfo } from "./types.ts";
 
 async function getChildPaths(dataDir: string): Promise<string[]> {
   const entries = await readdir(dataDir);
@@ -134,7 +134,7 @@ export async function scanTorrents(
       return {
         path: torrent.basePath,
         size,
-        type: "unknown" as const, // Initial type, will be classified later
+        type: "unknown" as const,
         torrentInfo: torrent,
         lastModified: stats?.mtime ? stats.mtime.getTime() : Date.now(),
       };
@@ -144,13 +144,20 @@ export async function scanTorrents(
 }
 
 export async function scanOrphanedPaths(
-  dataDirs: string[]
+  dataDirs: string[],
+  allTorrents: TorrentInfo[]
 ): Promise<OrphanedPath[]> {
   const allBasePaths = (await Promise.all(dataDirs.map(getChildPaths))).flat();
   const pathsHoldingHardlinkTargets = await getBasePathsWithLinks(dataDirs);
   const orphanedPaths = allBasePaths.filter(
     (path) => !pathsHoldingHardlinkTargets.has(path)
   );
+
+  const torrentsByBasePath = Object.groupBy(
+    allTorrents,
+    (torrent) => torrent.basePath
+  );
+
   return await Promise.all(
     orphanedPaths.map(async (path) => {
       const [stats, size] = await Promise.all([stat(path), du(path)]);
@@ -159,6 +166,7 @@ export async function scanOrphanedPaths(
         path,
         size,
         lastModified: stats.mtime.getTime(),
+        relatedTorrents: torrentsByBasePath[path] ?? [],
       };
     })
   );

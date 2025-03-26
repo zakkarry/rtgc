@@ -45,4 +45,5 @@ export interface OrphanedPath {
   size: number;
   type: "orphaned";
   lastModified: number;
+  relatedTorrents: TorrentInfo[];
 }

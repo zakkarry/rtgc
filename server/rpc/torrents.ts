@@ -6,6 +6,16 @@ import { RTorrent } from "../rtorrent.ts";
 import { protectedProcedure, router } from "../trpc.ts";
 import type { ProblemType, Rule, TorrentInfo } from "../types.ts";
 
+export const torrentInfoSchema = z.object({
+  infoHash: z.string(),
+  name: z.string(),
+  tracker: z.string(),
+  directory: z.string(),
+  basePath: z.string(),
+  custom1: z.string(),
+  message: z.string(),
+});
+
 function classifyTorrent(torrent: TorrentInfo, rules: Rule[]): ProblemType {
   const message = torrent.message.toLowerCase();
 
@@ -63,15 +73,7 @@ export const torrents = router({
             "unknown",
             "timeout",
           ]),
-          torrentInfo: z.object({
-            infoHash: z.string(),
-            name: z.string(),
-            tracker: z.string(),
-            directory: z.string(),
-            basePath: z.string(),
-            custom1: z.string(),
-            message: z.string(),
-          }),
+          torrentInfo: torrentInfoSchema,
           lastModified: z.number(),
         })
       )
