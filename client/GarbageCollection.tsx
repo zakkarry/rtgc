@@ -2,43 +2,58 @@ import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import {
   useMutation,
   useQueryClient,
+  useSuspenseQueries,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
-import type { CleanupResult, ProblemPath, ProblemType } from "../server/types";
-import { trpc } from "./utils/trpc";
-import { TypeFilter } from "./components/TypeFilter";
-import { ProblemPathsTable } from "./components/ProblemPathsTable";
-import { filesize } from "filesize";
+import { useMemo, useState } from "react";
+import type {
+  OrphanedPath,
+  ProblemTorrent,
+  ProblemType,
+} from "../server/types";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { GarbageSummary } from "./components/GarbageSummary";
+import { ProblemPathsTable } from "./components/ProblemPathsTable";
+import { TypeFilter } from "./components/TypeFilter";
+import { trpc } from "./utils/trpc";
 
 export function GarbageCollection() {
   const queryClient = useQueryClient();
   const [showConfirm, setShowConfirm] = useState(false);
-  const [selectedType, setSelectedType] = useState<ProblemType | null>(
+  const [selectedType, setSelectedType] = useState<ProblemType | "orphaned">(
     "unregistered"
   );
 
-  const { data: scanResults } = useSuspenseQuery(
-    trpc.torrents.scanTorrents.queryOptions()
+  const [{ data: scanResults }, { data: orphanedResults }] = useSuspenseQueries(
+    {
+      queries: [
+        trpc.torrents.scanTorrents.queryOptions(),
+        trpc.paths.scanForOrphans.queryOptions(),
+      ],
+    }
   );
 
   const { data: classifyResults } = useSuspenseQuery(
-    trpc.torrents.classifyTorrents.queryOptions(scanResults.torrentPaths)
+    trpc.torrents.classifyTorrents.queryOptions(scanResults)
   );
 
-  const allResults = useMemo(
-    () => [...classifyResults, ...scanResults.orphanedPaths],
-    [classifyResults, scanResults.orphanedPaths]
-  );
+  const allResults = useMemo(() => {
+    if (selectedType === "orphaned") {
+      return orphanedResults;
+    }
+    return selectedType
+      ? classifyResults.filter((p) => p.type === selectedType)
+      : classifyResults;
+  }, [classifyResults, orphanedResults, selectedType]);
 
-  const cleanupMutation = useMutation(
-    trpc.torrents.cleanupTorrents.mutationOptions({
-      onSuccess: (result: CleanupResult) => {
-        console.log("Cleanup successful", result);
+  const deleteTorrentsMutation = useMutation(
+    trpc.torrents.deleteTorrents.mutationOptions({
+      onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: trpc.torrents.scanTorrents.queryKey(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: trpc.torrents.classifyTorrents.queryKey(),
         });
       },
       onError: (error) => {
@@ -51,33 +66,39 @@ export function GarbageCollection() {
     setShowConfirm(true);
   };
 
-  const handleConfirmCleanup = () => {
-    cleanupMutation.mutate({ paths: allResults.map((p) => p.path) });
-    setShowConfirm(false);
-  };
-
   const handleCancelCleanup = () => {
     setShowConfirm(false);
   };
 
-  const filteredProblemPaths = useMemo(
-    () =>
-      selectedType
-        ? allResults.filter((p: ProblemPath) => p.type === selectedType)
-        : allResults,
-    [allResults, selectedType]
-  );
+  const handleConfirmCleanup = () => {
+    if (selectedType === "orphaned") {
+      // TODO: Implement orphaned path deletion
+      console.warn("Orphaned path deletion not yet implemented");
+    } else {
+      deleteTorrentsMutation.mutate({
+        infoHashes: allResults.map(
+          (p) => (p as ProblemTorrent).torrentInfo.infoHash
+        ),
+      });
+    }
+    setShowConfirm(false);
+  };
 
   const handleRescan = () => {
     queryClient.invalidateQueries({
-      queryKey: trpc.torrents.scanTorrents.queryKey(),
+      queryKey: [
+        trpc.torrents.scanTorrents.queryKey(),
+        trpc.paths.scanForOrphans.queryKey(),
+      ],
     });
   };
 
-  const totalProblemSize = allResults.reduce(
-    (sum, p: ProblemPath) => sum + p.size,
-    0
-  );
+  const totalProblemSize = allResults.reduce((sum, p) => sum + p.size, 0);
+
+  const buttonText =
+    selectedType === "orphaned"
+      ? `Delete ${allResults.length} orphaned paths`
+      : `Delete ${allResults.length} ${selectedType} torrents`;
 
   return (
     <Flex gap={4} direction="column">
@@ -85,7 +106,8 @@ export function GarbageCollection() {
         <Box marginRight="auto">
           <TypeFilter
             selectedType={selectedType}
-            problemPaths={allResults}
+            problemTorrents={classifyResults}
+            orphanedPaths={orphanedResults}
             onChange={setSelectedType}
           />
         </Box>
@@ -94,26 +116,35 @@ export function GarbageCollection() {
         </Button>
         <Button
           onClick={handleCleanup}
-          colorScheme="danger"
-          disabled={filteredProblemPaths.length === 0}
+          disabled={allResults.length === 0 || selectedType === "healthy"}
         >
-          Clean Up All
+          {buttonText}
         </Button>
       </Flex>
       <GarbageSummary
-        totalPaths={allResults.length}
-        totalSize={totalProblemSize}
+        totalPaths={classifyResults.length + orphanedResults.length}
+        totalSize={[...classifyResults, ...orphanedResults].reduce(
+          (sum, p) => sum + p.size,
+          0
+        )}
+        selectedPaths={allResults.length}
+        selectedSize={allResults.reduce((sum, p) => sum + p.size, 0)}
       />
-      {filteredProblemPaths.length === 0 ? (
+      {allResults.length === 0 ? (
         <Text fontSize="lg">No problems match the selected filter.</Text>
       ) : (
-        <ProblemPathsTable problemPaths={filteredProblemPaths} />
+        <ProblemPathsTable
+          problemPaths={allResults}
+          showing={
+            selectedType === "orphaned" ? "orphanedPaths" : "problemTorrents"
+          }
+        />
       )}
       <ConfirmDialog
         showConfirm={showConfirm}
         onCancel={handleCancelCleanup}
         onConfirm={handleConfirmCleanup}
-        length={filteredProblemPaths.length}
+        length={allResults.length}
         totalProblemSize={totalProblemSize}
       />
     </Flex>

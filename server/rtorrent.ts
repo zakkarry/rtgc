@@ -51,39 +51,6 @@ export class RTorrent {
     return this.call("download_list") as Promise<string[]>;
   }
 
-  async getTorrent(infoHash: string): Promise<TorrentInfo> {
-    const response = await this.call(
-      "system.multicall",
-      getTorrentMetadataCalls(infoHash)
-    );
-
-    const [
-      [directory],
-      [message],
-      [isMultiFile],
-      [name],
-      [announce],
-      [custom1],
-    ] = response as [
-      [string],
-      [string],
-      [string],
-      [string],
-      [string],
-      [string]
-    ];
-
-    return {
-      infoHash,
-      name,
-      tracker: new URL(announce).hostname,
-      directory: isMultiFile === "1" ? dirname(directory) : directory,
-      basePath: isMultiFile === "1" ? directory : join(directory, name),
-      custom1,
-      message,
-    };
-  }
-
   /**
    * Get metadata for an arbitrary number of torrents.
    * Should be used via getTorrentsBatched for better performance.
@@ -130,14 +97,17 @@ export class RTorrent {
     return all.flat();
   }
 
-  async removeTorrent(infoHash: string): Promise<void> {
-    await this.call("d.erase", infoHash);
+  async removeTorrents(infoHashes: string[]): Promise<void> {
+    await this.call(
+      "system.multicall",
+      infoHashes.flatMap((infoHash) => method("d.erase", [infoHash]))
+    );
 
+    const infoHashesSet = new Set(infoHashes);
     for (let i = 0; i < 5; i++) {
-      const downloadList = await this.downloadList();
-      if (!downloadList.includes(infoHash)) return;
+      const downloadList = new Set(await this.downloadList());
+      if (infoHashesSet.intersection(downloadList).size === 0) return;
       await new Promise((r) => void setTimeout(r, 100 * Math.pow(2, i)));
     }
-    throw new Error("Failed to remove torrent");
   }
 }

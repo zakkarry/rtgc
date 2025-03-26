@@ -27,33 +27,22 @@ export interface Settings {
 export type ProblemType =
   | "healthy"
   | "unregistered"
-  | "orphaned"
   | "missingFiles"
   | "timeout"
   | "unknown";
 
-export interface ProblemPath {
+export interface ProblemTorrent {
   path: string;
   size: number;
   type: ProblemType;
-  torrentInfo?: TorrentInfo;
+  torrentInfo: TorrentInfo;
   // unix timestamp but in milliseconds
   lastModified: number;
 }
 
-export interface ScanResult {
-  // Paths that have associated torrents and need classification
-  torrentPaths: ProblemPath[];
-  // Paths that are definitely orphaned (no associated torrent)
-  orphanedPaths: ProblemPath[];
-  totalSize: number;
-  totalPaths: number;
-  percentageOfTotalPaths: number;
-  percentageOfTotalSize: number;
-}
-
-export interface CleanupResult {
-  removedPaths: string[];
-  removedTorrents: TorrentInfo[];
-  totalSizeRemoved: number;
+export interface OrphanedPath {
+  path: string;
+  size: number;
+  type: "orphaned";
+  lastModified: number;
 }

@@ -1,28 +1,36 @@
 import { Button, Flex } from "@chakra-ui/react";
-import { ProblemPath, type ProblemType } from "../../server/types";
-import { Radio, RadioGroup } from "../ui/radio";
+import type {
+  OrphanedPath,
+  ProblemTorrent,
+  ProblemType,
+} from "../../server/types";
 
 interface TypeFilterProps {
-  selectedType: ProblemType | null;
-  problemPaths: ProblemPath[];
-  onChange: (type: ProblemType | null) => void;
+  selectedType: ProblemType | "orphaned";
+  problemTorrents: ProblemTorrent[];
+  orphanedPaths: OrphanedPath[];
+  onChange: (type: ProblemType | "orphaned") => void;
 }
 
-const PROBLEM_TYPES: ProblemType[] = [
+const PROBLEM_TYPES: (ProblemType | "orphaned")[] = [
   "unregistered",
-  "orphaned",
   "missingFiles",
   "timeout",
   "unknown",
   "healthy",
+  "orphaned",
 ];
 
 export function TypeFilter({
   selectedType,
-  problemPaths,
+  problemTorrents,
+  orphanedPaths,
   onChange,
 }: TypeFilterProps) {
-  const counts = Object.groupBy(problemPaths, (p) => p.type);
+  const counts = {
+    ...Object.groupBy(problemTorrents, (p) => p.type),
+    orphaned: orphanedPaths,
+  };
 
   return (
     <Flex gap={2} align="center">

@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getRules, getSettings } from "../db.ts";
-import { cleanupTorrents, scanTorrents } from "../rtgc.ts";
+import { deleteTorrents, scanTorrents } from "../rtgc.ts";
 import { RTorrent } from "../rtorrent.ts";
 import { protectedProcedure, router } from "../trpc.ts";
 import type { ProblemType, Rule, TorrentInfo } from "../types.ts";
@@ -38,9 +38,9 @@ function classifyTorrent(torrent: TorrentInfo, rules: Rule[]): ProblemType {
 export const torrents = router({
   scanTorrents: protectedProcedure.query(async () => {
     try {
-      const { rtorrentUrl, dataDirs } = getSettings();
+      const { rtorrentUrl } = getSettings();
       const rtorrent = new RTorrent(rtorrentUrl);
-      return await scanTorrents(rtorrent, dataDirs);
+      return await scanTorrents(rtorrent);
     } catch (error) {
       console.error("Error scanning torrents:", error);
       throw new TRPCError({
@@ -59,22 +59,19 @@ export const torrents = router({
           type: z.enum([
             "healthy",
             "unregistered",
-            "orphaned",
             "missingFiles",
             "unknown",
             "timeout",
           ]),
-          torrentInfo: z
-            .object({
-              infoHash: z.string(),
-              name: z.string(),
-              tracker: z.string(),
-              directory: z.string(),
-              basePath: z.string(),
-              custom1: z.string(),
-              message: z.string(),
-            })
-            .optional(),
+          torrentInfo: z.object({
+            infoHash: z.string(),
+            name: z.string(),
+            tracker: z.string(),
+            directory: z.string(),
+            basePath: z.string(),
+            custom1: z.string(),
+            message: z.string(),
+          }),
           lastModified: z.number(),
         })
       )
@@ -83,10 +80,6 @@ export const torrents = router({
       try {
         const rules = getRules();
         return input.map((path) => {
-          if (!path.torrentInfo) {
-            return path; // Keep paths without torrent info as is
-          }
-
           return {
             ...path,
             type: classifyTorrent(path.torrentInfo, rules),
@@ -101,15 +94,15 @@ export const torrents = router({
       }
     }),
 
-  cleanupTorrents: protectedProcedure
-    .input(z.object({ paths: z.array(z.string()) }))
+  deleteTorrents: protectedProcedure
+    .input(z.object({ infoHashes: z.array(z.string()) }))
     .mutation(async ({ input }) => {
       try {
-        const { rtorrentUrl, dataDirs } = getSettings();
+        const { rtorrentUrl } = getSettings();
         const rtorrent = new RTorrent(rtorrentUrl);
-        return await cleanupTorrents(rtorrent, dataDirs, input.paths);
+        return await deleteTorrents(rtorrent, input.infoHashes);
       } catch (error) {
-        console.error("Error cleaning up torrents:", error);
+        console.error("Error deleting torrents:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: error instanceof Error ? error.message : "Unknown error",

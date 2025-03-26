@@ -4,9 +4,16 @@ import { filesize } from "filesize";
 interface GarbageSummaryProps {
   totalPaths: number;
   totalSize: number;
+  selectedPaths: number;
+  selectedSize: number;
 }
 
-export function GarbageSummary({ totalPaths, totalSize }: GarbageSummaryProps) {
+export function GarbageSummary({
+  totalPaths,
+  totalSize,
+  selectedPaths,
+  selectedSize,
+}: GarbageSummaryProps) {
   const summaryBg = "bg.muted";
 
   return (
@@ -18,6 +25,14 @@ export function GarbageSummary({ totalPaths, totalSize }: GarbageSummaryProps) {
       <Box>
         <Text fontWeight="bold">Total Size</Text>
         <Text fontSize="2xl">{filesize(totalSize)}</Text>
+      </Box>
+      <Box>
+        <Text fontWeight="bold">Selected Paths</Text>
+        <Text fontSize="2xl">{selectedPaths}</Text>
+      </Box>
+      <Box>
+        <Text fontWeight="bold">Selected Size</Text>
+        <Text fontSize="2xl">{filesize(selectedSize)}</Text>
       </Box>
     </Flex>
   );
