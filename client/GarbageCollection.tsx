@@ -20,7 +20,6 @@ import { Checkbox } from "./ui/checkbox";
 import { OrphanedPathsTable } from "./components/OrphanedPathsTable";
 
 export function GarbageCollection() {
-  const queryClient = useQueryClient();
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedType, setSelectedType] = useState<ProblemType | "orphaned">(
     "unregistered"
@@ -63,19 +62,6 @@ export function GarbageCollection() {
     setShowConfirm(true);
   };
 
-  const handleCancelCleanup = () => {
-    setShowConfirm(false);
-  };
-
-  const handleRescan = () => {
-    queryClient.invalidateQueries({
-      queryKey: [
-        trpc.torrents.scanTorrents.queryKey(),
-        trpc.paths.scanForOrphans.queryKey(),
-      ],
-    });
-  };
-
   const buttonText =
     selectedType === "orphaned"
       ? `Delete ${filteredResults.length} orphaned paths`
@@ -106,9 +92,6 @@ export function GarbageCollection() {
             )}
           </Flex>
         </Box>
-        <Button onClick={handleRescan} colorScheme="primary" variant="outline">
-          Refresh
-        </Button>
         <Button
           onClick={handleCleanup}
           disabled={filteredResults.length === 0 || selectedType === "healthy"}
