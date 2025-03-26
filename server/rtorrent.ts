@@ -34,7 +34,11 @@ export class RTorrent {
         : xmlrpc.createClient;
     this.client = clientCreator({
       url: url.origin + url.pathname,
-      // basic_auth: { user: url.username, pass: url.password },
+      ...(url.username && url.password
+        ? {
+            basic_auth: { user: url.username, pass: url.password },
+          }
+        : {}),
     });
   }
 
