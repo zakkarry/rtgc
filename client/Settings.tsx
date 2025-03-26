@@ -4,6 +4,7 @@ import {
   Flex,
   Heading,
   Input,
+  NumberInput,
   Text,
   Textarea,
 } from "@chakra-ui/react";
@@ -24,11 +25,20 @@ import {
   DialogTrigger,
   DialogCloseTrigger,
 } from "./ui/dialog";
+import { NumberInputField } from "./ui/number-input";
+
+function parseDataDirsText(dataDirsText: string) {
+  return dataDirsText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((dir) => dir !== "");
+}
 
 export function Settings() {
   const [open, setOpen] = useState(false);
   const [rtorrentUrl, setRtorrentUrl] = useState<string>("");
   const [dataDirsText, setDataDirsText] = useState<string>("");
+  const [failPastThreshold, setFailPastThreshold] = useState<string>("0.02");
   const queryClient = useQueryClient();
 
   const { data } = useSuspenseQuery(trpc.settings.getSettings.queryOptions());
@@ -41,10 +51,15 @@ export function Settings() {
           ? data.dataDirs.join("\n")
           : ""
       );
+      setFailPastThreshold(String(data.failPastThreshold));
     }
   }, [data]);
 
-  const updateSettingsMutation = useMutation(
+  const {
+    mutate: updateSettings,
+    error,
+    isPending,
+  } = useMutation(
     trpc.settings.updateSettings.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
@@ -56,14 +71,12 @@ export function Settings() {
   );
 
   const saveSettings = () => {
-    const filteredDirs = dataDirsText
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((dir) => dir !== "");
+    const filteredDirs = parseDataDirsText(dataDirsText);
 
-    updateSettingsMutation.mutate({
+    updateSettings({
       rtorrentUrl,
       dataDirs: filteredDirs,
+      failPastThreshold: parseFloat(failPastThreshold),
     });
   };
 
@@ -85,62 +98,56 @@ export function Settings() {
         </DialogHeader>
 
         <DialogBody>
-          <Box mb={6}>
-            <Text fontWeight="bold" mb={2}>
-              rTorrent URL
-            </Text>
-            <Input
-              value={rtorrentUrl}
-              onChange={(e) => setRtorrentUrl(e.target.value)}
-              placeholder="http://localhost:8000"
-            />
-          </Box>
-
-          <Box mb={6}>
-            <Text fontWeight="bold" mb={2}>
-              Data Directories
-            </Text>
-            <Textarea
-              value={dataDirsText}
-              onChange={(e) => setDataDirsText(e.target.value)}
-              placeholder="/path/to/data1&#10;/path/to/data2"
-              rows={5}
-            />
-            <Text fontSize="sm" mt={1} color="text.subtle">
-              Enter one directory per line
-            </Text>
-
-            {dataDirsText.trim() !== "" && (
-              <Box
-                mt={3}
-                p={3}
-                bg="bg.muted"
-                borderRadius="md"
-                maxH="200px"
-                overflowY="auto"
-              >
-                <Text fontSize="sm" fontWeight="bold" mb={2}>
-                  Parsed directories:
-                </Text>
-                {dataDirsText
-                  .split("\n")
-                  .map((line) => line.trim())
-                  .filter((dir) => dir !== "")
-                  .map((dir, i) => (
-                    <Text key={i} fontSize="sm" mb={1}>
-                      {i + 1}. {dir}
-                    </Text>
-                  ))}
-              </Box>
-            )}
-          </Box>
+          <Flex direction="column" gap={4}>
+            <Box>
+              <Text fontWeight="bold" mb={2}>
+                rTorrent URL
+              </Text>
+              <Input
+                value={rtorrentUrl}
+                onChange={(e) => setRtorrentUrl(e.target.value)}
+                placeholder="http://localhost:8000"
+              />
+            </Box>
+            <Box>
+              <Text fontWeight="bold" mb={2}>
+                Data Directories ({parseDataDirsText(dataDirsText).length})
+              </Text>
+              <Textarea
+                value={dataDirsText}
+                onChange={(e) => setDataDirsText(e.target.value)}
+                placeholder="/path/to/data1&#10;/path/to/data2"
+                rows={5}
+              />
+              <Text fontSize="sm" mt={1} color="text.subtle">
+                Enter one directory per line
+              </Text>
+            </Box>
+            <Box>
+              <Text fontWeight="bold" mb={2}>
+                Fail Past Threshold
+              </Text>
+              <Input
+                value={failPastThreshold}
+                onChange={(e) => setFailPastThreshold(e.target.value)}
+                placeholder="0.02"
+              />
+            </Box>
+          </Flex>
         </DialogBody>
 
         <DialogFooter>
+          <Flex>
+            {error && (
+              <Text color="red" fontSize="sm">
+                {error.message}
+              </Text>
+            )}
+          </Flex>
           <Button
             colorScheme="primary"
             onClick={saveSettings}
-            loading={updateSettingsMutation.isPending}
+            loading={isPending}
           >
             Save
           </Button>

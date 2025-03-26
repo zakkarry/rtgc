@@ -3,6 +3,7 @@ import { readdir, stat } from "node:fs/promises";
 import { join, normalize, resolve, sep } from "node:path";
 import { RTorrent } from "./rtorrent.ts";
 import type { OrphanedPath, ProblemTorrent, TorrentInfo } from "./types.ts";
+import { getSettings } from "./db.ts";
 
 async function getChildPaths(dataDir: string): Promise<string[]> {
   const entries = await readdir(dataDir);
@@ -176,5 +177,6 @@ export async function deleteTorrents(
   rtorrent: RTorrent,
   infoHashes: string[]
 ): Promise<void> {
-  await rtorrent.removeTorrents(infoHashes);
+  const { failPastThreshold } = getSettings();
+  await rtorrent.removeTorrents(infoHashes, failPastThreshold);
 }

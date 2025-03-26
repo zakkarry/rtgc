@@ -41,7 +41,7 @@ export function GarbageCollection() {
       ],
     });
 
-  const allResults = useMemo(() => {
+  const filteredResults = useMemo(() => {
     let results =
       selectedType === "orphaned"
         ? orphanedResults
@@ -75,6 +75,21 @@ export function GarbageCollection() {
     })
   );
 
+  const deleteOrphansMutation = useMutation(
+    trpc.paths.deleteOrphans.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: trpc.paths.scanForOrphans.queryKey(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: trpc.torrents.scanTorrents.queryKey(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: trpc.torrents.classifyTorrents.queryKey(),
+        });
+      },
+    })
+  );
   const handleCleanup = () => {
     setShowConfirm(true);
   };
@@ -85,11 +100,12 @@ export function GarbageCollection() {
 
   const handleConfirmCleanup = () => {
     if (selectedType === "orphaned") {
-      // TODO: Implement orphaned path deletion
-      console.warn("Orphaned path deletion not yet implemented");
+      deleteOrphansMutation.mutate({
+        orphanedPaths: filteredResults as OrphanedPath[],
+      });
     } else {
       deleteTorrentsMutation.mutate({
-        infoHashes: allResults.map(
+        infoHashes: filteredResults.map(
           (p) => (p as ProblemTorrent).torrentInfo.infoHash
         ),
       });
@@ -106,12 +122,12 @@ export function GarbageCollection() {
     });
   };
 
-  const totalProblemSize = allResults.reduce((sum, p) => sum + p.size, 0);
-
   const buttonText =
     selectedType === "orphaned"
-      ? `Delete ${allResults.length} orphaned paths`
-      : `Delete ${allResults.length} ${selectedType} torrents`;
+      ? `Delete ${filteredResults.length} orphaned paths`
+      : `Delete ${filteredResults.length} ${selectedType} torrents`;
+
+  const filteredSize = filteredResults.reduce((sum, p) => sum + p.size, 0);
 
   return (
     <Flex gap={4} direction="column">
@@ -141,7 +157,7 @@ export function GarbageCollection() {
         </Button>
         <Button
           onClick={handleCleanup}
-          disabled={allResults.length === 0 || selectedType === "healthy"}
+          disabled={filteredResults.length === 0 || selectedType === "healthy"}
         >
           {buttonText}
         </Button>
@@ -152,24 +168,24 @@ export function GarbageCollection() {
           (sum, p) => sum + p.size,
           0
         )}
-        selectedPaths={allResults.length}
-        selectedSize={allResults.reduce((sum, p) => sum + p.size, 0)}
+        selectedPaths={filteredResults.length}
+        selectedSize={filteredSize}
       />
-      {allResults.length === 0 ? (
+      {filteredResults.length === 0 ? (
         <Text fontSize="lg">No problems match the selected filter.</Text>
       ) : selectedType === "orphaned" ? (
-        <OrphanedPathsTable orphanedPaths={allResults as OrphanedPath[]} />
+        <OrphanedPathsTable orphanedPaths={filteredResults as OrphanedPath[]} />
       ) : (
         <ProblemTorrentsTable
-          problemTorrents={allResults as ProblemTorrent[]}
+          problemTorrents={filteredResults as ProblemTorrent[]}
         />
       )}
       <ConfirmDialog
         showConfirm={showConfirm}
         onCancel={handleCancelCleanup}
         onConfirm={handleConfirmCleanup}
-        length={allResults.length}
-        totalProblemSize={totalProblemSize}
+        length={filteredResults.length}
+        selectedSize={filteredSize}
       />
     </Flex>
   );

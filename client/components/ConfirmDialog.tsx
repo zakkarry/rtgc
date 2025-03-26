@@ -12,7 +12,7 @@ import {
 type ConfirmDialogProps = {
   showConfirm: boolean;
   length: number;
-  totalProblemSize: number;
+  selectedSize: number;
   onCancel: () => void;
   onConfirm: () => void;
 };
@@ -20,7 +20,7 @@ type ConfirmDialogProps = {
 export function ConfirmDialog({
   showConfirm,
   length,
-  totalProblemSize,
+  selectedSize,
   onCancel,
   onConfirm,
 }: ConfirmDialogProps) {
@@ -32,7 +32,7 @@ export function ConfirmDialog({
         <DialogBody>
           <Text>
             Are you sure you want to delete {length} paths (
-            {filesize(totalProblemSize)})? This action cannot be undone.
+            {filesize(selectedSize)})? This action cannot be undone.
           </Text>
         </DialogBody>
         <DialogFooter gap={2}>

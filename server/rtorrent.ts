@@ -97,7 +97,20 @@ export class RTorrent {
     return all.flat();
   }
 
-  async removeTorrents(infoHashes: string[]): Promise<void> {
+  async removeTorrents(
+    infoHashes: string[],
+    failPastThreshold: number
+  ): Promise<void> {
+    const downloadList = await this.downloadList();
+
+    if (infoHashes.length / downloadList.length > failPastThreshold) {
+      throw new Error(
+        `Requested number of torrents to remove exceeds ${
+          failPastThreshold * 100
+        }% of the total number of torrents`
+      );
+    }
+
     await this.call(
       "system.multicall",
       infoHashes.flatMap((infoHash) => method("d.erase", [infoHash]))

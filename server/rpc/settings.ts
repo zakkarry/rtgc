@@ -9,6 +9,7 @@ export const settings = router({
       z.object({
         rtorrentUrl: z.string(),
         dataDirs: z.array(z.string()),
+        failPastThreshold: z.number(),
       })
     )
     .mutation((t) => updateSettings(t.input)),

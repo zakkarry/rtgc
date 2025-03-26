@@ -81,6 +81,7 @@ const defaults: Database = {
   settings: {
     rtorrentUrl: "http://localhost:8000",
     dataDirs: ["/path/to/data1", "/path/to/data2"],
+    failPastThreshold: 0.02,
   },
 };
 

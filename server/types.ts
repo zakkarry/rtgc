@@ -22,6 +22,7 @@ export type DbUser = {
 export interface Settings {
   rtorrentUrl: string;
   dataDirs: string[];
+  failPastThreshold: number;
 }
 
 export type ProblemType =
