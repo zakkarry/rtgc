@@ -1,10 +1,5 @@
 import { Box, Button, Flex, Text } from "@chakra-ui/react";
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQueries,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import type {
   OrphanedPath,
@@ -13,19 +8,19 @@ import type {
 } from "../server/types";
 import { DeleteDialog } from "./components/ConfirmDialog";
 import { GarbageSummary } from "./components/GarbageSummary";
+import { OrphanedPathsTable } from "./components/OrphanedPathsTable";
 import { ProblemTorrentsTable } from "./components/ProblemTorrentsTable";
 import { TypeFilter } from "./components/TypeFilter";
-import { trpc } from "./utils/trpc";
 import { Checkbox } from "./ui/checkbox";
-import { OrphanedPathsTable } from "./components/OrphanedPathsTable";
+import { trpc } from "./utils/trpc";
 
 export function GarbageCollection() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedType, setSelectedType] = useState<ProblemType | "orphaned">(
     "unregistered"
   );
-  const [showOnlyStale, setShowOnlyStale] = useState(false);
-
+  const [showOnlyStale, setShowOnlyStale] = useState(true);
+  const [showOnlyComplete, setShowOnlyComplete] = useState(true);
   const { data: scanResults } = useSuspenseQuery(
     trpc.torrents.scanTorrents.queryOptions()
   );
@@ -55,12 +50,20 @@ export function GarbageCollection() {
       );
     }
 
-    return results;
-  }, [classifyResults, orphanedResults, selectedType, showOnlyStale]);
+    if (selectedType === "orphaned" && showOnlyComplete) {
+      results = (results as OrphanedPath[]).filter((p) =>
+        p.relatedTorrents.every((t) => t.complete)
+      );
+    }
 
-  const handleCleanup = () => {
-    setShowConfirm(true);
-  };
+    return results;
+  }, [
+    classifyResults,
+    orphanedResults,
+    selectedType,
+    showOnlyStale,
+    showOnlyComplete,
+  ]);
 
   const buttonText =
     selectedType === "orphaned"
@@ -81,19 +84,29 @@ export function GarbageCollection() {
               onChange={setSelectedType}
             />
             {selectedType === "orphaned" && (
-              <Checkbox
-                checked={showOnlyStale}
-                onCheckedChange={(details) =>
-                  setShowOnlyStale(details.checked === true)
-                }
-              >
-                only 30+ days old
-              </Checkbox>
+              <Flex gap={2}>
+                <Checkbox
+                  checked={showOnlyStale}
+                  onCheckedChange={(details) =>
+                    setShowOnlyStale(details.checked === true)
+                  }
+                >
+                  only 30+ days old
+                </Checkbox>
+                <Checkbox
+                  checked={showOnlyComplete}
+                  onCheckedChange={(details) =>
+                    setShowOnlyComplete(details.checked === true)
+                  }
+                >
+                  only complete
+                </Checkbox>
+              </Flex>
             )}
           </Flex>
         </Box>
         <Button
-          onClick={handleCleanup}
+          onClick={() => setShowConfirm(true)}
           disabled={filteredResults.length === 0 || selectedType === "healthy"}
         >
           {buttonText}

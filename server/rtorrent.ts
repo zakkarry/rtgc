@@ -20,6 +20,7 @@ function getTorrentMetadataCalls(infoHash: string): MethodCall[] {
     method("d.name", [infoHash]),
     method("t.url", [`${infoHash}:t0`]),
     method("d.custom1", [infoHash]),
+    method("d.complete", [infoHash]),
   ];
 }
 
@@ -76,6 +77,7 @@ export class RTorrent {
         [name],
         [announce],
         [custom1],
+        [complete],
       ] = chunk;
 
       responseBatches.push({
@@ -86,6 +88,7 @@ export class RTorrent {
         basePath: isMultiFile === "1" ? directory : join(directory, name),
         custom1,
         message,
+        complete: complete === "1",
       });
     }
 

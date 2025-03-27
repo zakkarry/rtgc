@@ -14,6 +14,7 @@ export const torrentInfoSchema = z.object({
   basePath: z.string(),
   custom1: z.string(),
   message: z.string(),
+  complete: z.boolean(),
 });
 
 function classifyTorrent(torrent: TorrentInfo, rules: Rule[]): ProblemType {

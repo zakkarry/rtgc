@@ -6,6 +6,7 @@ export interface TorrentInfo {
   basePath: string;
   custom1: string;
   message: string;
+  complete: boolean;
 }
 
 export type Rule = {

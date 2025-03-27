@@ -5,8 +5,11 @@ import { type FastifyRequest } from "fastify";
 async function getUserFromCookie(req: FastifyRequest) {
   const token = (req as any).cookies.rtgc_token;
   if (!token) return undefined;
-  const user = verifyJwt(token);
-  return user;
+  try {
+    return verifyJwt(token);
+  } catch (e) {
+    return undefined;
+  }
 }
 
 export async function createContext({ req, res }: CreateFastifyContextOptions) {
