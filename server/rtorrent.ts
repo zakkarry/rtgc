@@ -69,7 +69,7 @@ export class RTorrent {
     );
     const responseBatches: TorrentInfo[] = [];
     for (const [i, infoHash] of infoHashes.entries()) {
-      const chunk = response.slice(i * 6, (i + 1) * 6) as string[][];
+      const chunk = response.slice(i * 7, (i + 1) * 7) as string[][];
       const [
         [directory],
         [message],
